@@ -1,0 +1,50 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ---- Virtual Environments ----
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# ---- Flask ----
+instance/
+.webassets-cache
+*.db
+*.sqlite3
+
+# ---- Environment variables / Secrets ----
+# ЭТО САМОЕ ВАЖНОЕ: файл .env с паролем от MongoDB НЕ ДОЛЖЕН попасть в Git
+.env
+.env.*
+!.env.example
+
+# ---- Editors / IDE ----
+.vscode/
+.idea/
+*.swp
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
