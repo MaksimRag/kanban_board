@@ -1,3 +1,4 @@
+import certifi
 from flask_pymongo import PyMongo
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -11,10 +12,13 @@ mongo = PyMongo()
 # Инициализация
 # ============================================================
 
+
 def init_db(app):
-    """Привязывает клиент к приложению и создаёт индексы."""
+    
     app.config["MONGO_URI"] = settings.MONGODB_URI
-    mongo.init_app(app)
+
+    # Передаём PyMongo доверенные CA-сертификаты
+    mongo.init_app(app, tlsCAFile=certifi.where())
 
     with app.app_context():
         try:
