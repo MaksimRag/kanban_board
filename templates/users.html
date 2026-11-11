@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Сотрудники — Kanban Board{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Управление сотрудниками</h2>
+  <p class="muted">Добавление, просмотр, редактирование и удаление сотрудников.</p>
+</section>
+<section class="panel">
+  <h2>Добавить сотрудника</h2>
+  <form id="userForm">
+    <label>Логин</label><input name="username" required>
+    <label>Email</label><input name="email" type="email" required>
+    <label>ФИО</label><input name="full_name">
+    <button class="btn" type="submit">Добавить сотрудника</button>
+  </form>
+  <p id="message" class="muted"></p>
+</section>
+<section class="panel">
+  <h2>Список сотрудников</h2>
+  <button class="btn" type="button" onclick="loadUsers()">Обновить список</button>
+  <div id="users">Загрузка сотрудников...</div>
+</section>
+<script>
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  })[char]);
+}
+async function loadUsers() {
+  const container = document.getElementById('users');
+  try {
+    const response = await fetch('/users/');
+    if (!response.ok) throw new Error('Ошибка получения сотрудников');
+    const users = await response.json();
+    container.innerHTML = users.length ? users.map(user => `
+      <div class="status">
+        <h3>${escapeHtml(user.full_name || user.username)}</h3>
+        <p>Логин: ${escapeHtml(user.username)}</p>
+        <p>Email: ${escapeHtml(user.email)}</p>
+        <div class="actions">
+          <button class="btn" type="button" onclick="editUser('${user._id}')">Редактировать</button>
+          <button class="btn danger" type="button" onclick="deleteUser('${user._id}')">Удалить</button>
+        </div>
+      </div>`).join('') : 'Сотрудников пока нет.';
+  } catch (error) { container.textContent = error.message; }
+}
+document.getElementById('userForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.target;
+  const data = Object.fromEntries(new FormData(form));
+  const message = document.getElementById('message');
+  try {
+    const response = await fetch('/users/', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Не удалось добавить сотрудника');
+    message.textContent = 'Сотрудник успешно добавлен.';
+    form.reset();
+    await loadUsers();
+  } catch (error) { message.textContent = error.message; }
+});
+async function editUser(id) {
+  const username = prompt('Введите новый логин:');
+  if (username === null || !username.trim()) return;
+  const email = prompt('Введите новый Email:');
+  if (email === null || !email.trim()) return;
+  const full_name = prompt('Введите новое ФИО:');
+  if (full_name === null) return;
+  try {
+    const response = await fetch('/users/' + id, {
+      method: 'PATCH', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: username.trim(), email: email.trim(), full_name: full_name.trim()})
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Ошибка редактирования');
+    await loadUsers();
+  } catch (error) { alert(error.message); }
+}
+async function deleteUser(id) {
+  if (!confirm('Вы действительно хотите удалить сотрудника?')) return;
+  try {
+    const response = await fetch('/users/' + id, {method: 'DELETE'});
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || 'Ошибка удаления');
+    }
+    await loadUsers();
+  } catch (error) { alert(error.message); }
+}
+loadUsers();
+</script>
+{% endblock %}

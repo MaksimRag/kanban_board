@@ -26,6 +26,10 @@ def create_app():
     def tasks_page():
         return render_template("tasks.html")
 
+    @app.route("/users-page")
+    def users_page():
+        return render_template("users.html")
+
     @app.route("/task-form")
     def task_form_page():
         return render_template("task_form.html")
@@ -33,10 +37,6 @@ def create_app():
     @app.route("/health")
     def health():
         return jsonify({"status": "ok", "message": "Flask API is running"})
-
-    @app.route("/users-page")
-    def users_page():
-        return render_template("projects.html")
 
     return app
 
