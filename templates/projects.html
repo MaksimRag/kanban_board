@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Проекты — Kanban Board{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Сотрудники</h2>
+  <form id="userForm">
+    <label>Логин</label><input name="username" required>
+    <label>Email</label><input name="email" type="email" required>
+    <label>ФИО</label><input name="full_name">
+    <button class="btn" type="submit">Добавить сотрудника</button>
+  </form>
+  <p id="userMessage" class="muted"></p>
+  <div id="users">Загрузка сотрудников...</div>
+</section>
+<section class="panel">
+  <h2>Создание проекта</h2>
+  <form id="projectForm">
+    <label>Название проекта</label><input name="name" required>
+    <label>Описание</label><textarea name="description"></textarea>
+    <label>Владелец проекта</label><select name="owner_id" id="owner" required></select>
+    <button class="btn" type="submit">Создать проект</button>
+  </form>
+  <p id="message" class="muted"></p>
+</section>
+<section class="panel">
+  <h2>Список проектов</h2><div id="projects">Загрузка...</div>
+</section>
+<script>
+async function loadUsers(){
+ const r=await fetch('/users/');const users=await r.json();
+ document.getElementById('owner').innerHTML=users.map(u=>`<option value="${u._id}">${u.full_name||u.username}</option>`).join('');
+ document.getElementById('users').innerHTML=users.length?users.map(u=>`<div class="status"><b>${u.full_name||u.username}</b><p>${u.email}</p><small>ID: ${u._id}</small><p><button class="btn danger" onclick="removeUser('${u._id}')">Удалить сотрудника</button></p></div>`).join(''):'Сотрудников пока нет.';
+}
+async function loadProjects(){
+ const r=await fetch('/projects/');const projects=await r.json();
+ document.getElementById('projects').innerHTML=projects.length?projects.map(p=>`<div class="status"><b>${p.name}</b><p>${p.description||''}</p><small>ID владельца: ${p.owner_id}</small><p><button class="btn danger" onclick="removeProject('${p._id}')">Удалить проект</button></p></div>`).join(''):'Проектов пока нет.';
+}
+document.getElementById('userForm').addEventListener('submit',async e=>{
+ e.preventDefault();const f=Object.fromEntries(new FormData(e.target));
+ const r=await fetch('/users/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});
+ const d=await r.json();document.getElementById('userMessage').textContent=r.ok?'Сотрудник добавлен':(d.error||'Ошибка');
+ if(r.ok){e.target.reset();loadUsers();}
+});
+document.getElementById('projectForm').addEventListener('submit',async e=>{
+ e.preventDefault();const f=Object.fromEntries(new FormData(e.target));
+ const r=await fetch('/projects/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});
+ const d=await r.json();document.getElementById('message').textContent=r.ok?'Проект создан':(d.error||'Ошибка');
+ if(r.ok){e.target.reset();loadProjects();}
+});
+async function removeUser(id){
+ if(!confirm('Удалить сотрудника?'))return;
+ const r=await fetch('/users/'+id,{method:'DELETE'});
+ if(r.ok)loadUsers();else alert('Не удалось удалить сотрудника');
+}
+async function removeProject(id){
+ if(!confirm('Удалить проект? В текущей реализации db.py вместе с проектом удаляются его задачи.'))return;
+ const r=await fetch('/projects/'+id,{method:'DELETE'});
+ if(r.ok)loadProjects();else alert('Не удалось удалить проект');
+}
+Promise.all([loadUsers(),loadProjects()]).catch(e=>document.getElementById('projects').textContent='Ошибка: '+e.message);
+</script>
+{% endblock %}

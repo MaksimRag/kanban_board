@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Главная — Kanban Board{% endblock %}
+{% block content %}
+<section class="panel">
+  <h2>Панель проверки</h2>
+  <p>Стартовая страница приложения. Используйте кнопки сверху для перехода между разделами.</p>
+  <div class="actions">
+    <a class="btn" href="/projects-page">Открыть проекты</a>
+    <a class="btn" href="/tasks-page">Открыть задачи</a>
+    <a class="btn" href="/task-form">Создать задачу</a>
+    <a class="btn" href="/users-page">Сотрудники</a>
+  </div>
+  <p id="connection" class="status">Проверка подключения...</p>
+</section>
+<section class="panel">
+  <h2>Статистика задач</h2>
+  <div id="stats" class="status">Загрузка...</div>
+</section>
+<script>
+async function loadHome(){
+  const c=document.getElementById('connection'), s=document.getElementById('stats');
+  try{
+    const r=await fetch('/health'); if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json(); c.textContent='Flask: подключён ('+d.status+')';
+    const tr=await fetch('/tasks/stats'); if(!tr.ok) throw new Error('HTTP '+tr.status);
+    const x=await tr.json();
+    s.textContent=`Всего: ${x.total} | Новые: ${x.new} | В работе: ${x.in_progress} | Выполнены: ${x.done}`;
+  }catch(e){c.textContent='Ошибка подключения: '+e.message;s.textContent='Не удалось получить статистику';}
+}
+loadHome();
+</script>
+{% endblock %}

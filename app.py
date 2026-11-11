@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify, render_template
 from db import init_db
 from routes.users import users_bp
 from routes.projects import projects_bp
@@ -16,7 +16,27 @@ def create_app():
 
     @app.route("/")
     def index():
-        return {"message": "Kanban API on Flask is running"}
+        return render_template("index.html")
+
+    @app.route("/projects-page")
+    def projects_page():
+        return render_template("projects.html")
+
+    @app.route("/tasks-page")
+    def tasks_page():
+        return render_template("tasks.html")
+
+    @app.route("/task-form")
+    def task_form_page():
+        return render_template("task_form.html")
+
+    @app.route("/health")
+    def health():
+        return jsonify({"status": "ok", "message": "Flask API is running"})
+
+    @app.route("/users-page")
+    def users_page():
+        return render_template("projects.html")
 
     return app
 

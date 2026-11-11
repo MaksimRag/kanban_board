@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Задачи — Kanban Board{% endblock %}
+{% block content %}
+<section class="panel">
+ <h2>Задачи</h2>
+ <div class="actions">
+  <a class="btn" href="/task-form">Создать задачу</a>
+  <button class="btn" onclick="loadTasks()">Обновить список</button>
+ </div>
+ <label>Фильтр по проекту</label><select id="projectFilter" onchange="loadTasks()"><option value="">Все проекты</option></select>
+ <label>Фильтр по статусу</label><select id="statusFilter" onchange="loadTasks()">
+  <option value="">Все статусы</option><option value="TODO">Новая</option><option value="IN_PROGRESS">В работе</option><option value="DONE">Выполнена</option>
+ </select>
+ <div id="stats" class="status"></div>
+ <div id="tasks">Загрузка...</div>
+</section>
+<script>
+async function loadTasks(){
+ const [pr]=await Promise.all([fetch('/projects/')]);const projects=await pr.json();
+ const pf=document.getElementById('projectFilter'),old=pf.value;
+ pf.innerHTML='<option value="">Все проекты</option>'+projects.map(p=>`<option value="${p._id}">${p.name}</option>`).join('');
+ pf.value=old;
+ const q=new URLSearchParams();if(pf.value)q.set('project_id',pf.value);if(document.getElementById('statusFilter').value)q.set('status',document.getElementById('statusFilter').value);
+ const r=await fetch('/tasks/?'+q.toString());const tasks=await r.json();
+ document.getElementById('tasks').innerHTML=tasks.length?tasks.map(t=>`<div class="status"><b>${t.title}</b><p>${t.description||''}</p><small>Статус: ${t.status} | ID проекта: ${t.project_id}</small><p class="actions"><button class="btn" onclick="changeStatus('${t._id}','IN_PROGRESS')">В работу</button><button class="btn" onclick="changeStatus('${t._id}','DONE')">Выполнена</button><button class="btn danger" onclick="removeTask('${t._id}')">Удалить</button></p></div>`).join(''):'Задач нет.';
+ const sr=await fetch('/tasks/stats'+(pf.value?'?project_id='+pf.value:''));const st=await sr.json();
+ document.getElementById('stats').textContent=`Всего: ${st.total} | Новые: ${st.new} | В работе: ${st.in_progress} | Выполнены: ${st.done}`;
+}
+async function changeStatus(id,status){const r=await fetch('/tasks/'+id+'/move',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});if(r.ok)loadTasks();else alert('Не удалось изменить статус');}
+async function removeTask(id){if(!confirm('Удалить задачу?'))return;const r=await fetch('/tasks/'+id,{method:'DELETE'});if(r.ok)loadTasks();else alert('Не удалось удалить задачу');}
+loadTasks().catch(e=>document.getElementById('tasks').textContent='Ошибка: '+e.message);
+</script>
+{% endblock %}
