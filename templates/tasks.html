@@ -36,10 +36,10 @@
 .board-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:22px}
 .board-heading h2{margin:0 0 6px;font-size:23px}
 .board-heading p{margin:0}
-.board-tools{display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(190px,.8fr) minmax(210px,1fr);gap:14px;align-items:end;margin-bottom:18px}
+.board-tools{display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(190px,.8fr);gap:14px;align-items:end;margin-bottom:18px}
 .board-tools label{display:block;font-size:13px;font-weight:700;color:#536176;margin-bottom:6px}
 .board-tools input,.board-tools select{display:block;width:100%;max-width:none;height:42px;margin:0;padding:9px 12px;border:1px solid #ccd5e1;border-radius:8px;background:#fff}
-.board-summary{font-size:13px;color:#59677b;background:#f2f5f9;border:1px solid #e4eaf1;border-radius:8px;padding:12px 14px;min-height:42px}
+.board-summary{grid-column:1/-1;font-size:13px;color:#59677b;background:#f2f5f9;border:1px solid #e4eaf1;border-radius:8px;padding:12px 14px;min-height:42px}
 .board-columns{display:grid;grid-template-columns:repeat(3,minmax(260px,1fr));gap:15px;align-items:start;overflow-x:auto;padding:2px 2px 12px}
 .kanban-column{background:#f2f5f9;border:1px solid #e0e6ee;border-radius:11px;min-height:330px;overflow:hidden;transition:border-color .15s,background .15s}
 .kanban-column.drag-over{background:#e8f0fb;border-color:#6d93c2;box-shadow:inset 0 0 0 2px #9bb6d7}
@@ -106,11 +106,11 @@ function filteredTasks(){
 }
 function renderTask(task){
   const statusOptions=statusOrder.map(status=>`<option value="${status}" ${task.status===status?'selected':''}>${statusNames[status]}</option>`).join('');
-  return `<article class="task-card" draggable="true" data-task-id="${escapeHtml(task._id)}"
-      ondragstart="onCardDragStart(event)" ondragend="onCardDragEnd(event)">
+  return `<article class="task-card" draggable="${task.can_change_status ? 'true' : 'false'}" data-task-id="${escapeHtml(task._id)}"
+      ${task.can_change_status ? 'ondragstart="onCardDragStart(event)" ondragend="onCardDragEnd(event)"' : ''}>
     <div class="task-card-top">
       <span class="task-status status-${escapeHtml(task.status)}">${escapeHtml(statusNames[task.status]||task.status)}</span>
-      <span class="drag-hint">⠿ Перетащить</span>
+      ${task.can_change_status ? '<span class="drag-hint">⠿ Перетащить</span>' : ''}
     </div>
     <h3>${escapeHtml(task.title)}</h3>
     ${task.description?`<p class="task-description">${escapeHtml(task.description)}</p>`:''}
@@ -120,7 +120,8 @@ function renderTask(task){
       <span><b>Участник:</b> ${escapeHtml(task.assignee_username||'Не назначен')}</span>
     </div>
     <div class="task-actions">
-      <select aria-label="Изменить статус задачи" onchange="changeStatus('${escapeHtml(task._id)}',this.value)">${statusOptions}</select>
+      ${task.can_change_status ? `<select aria-label="Изменить статус задачи" onchange="changeStatus('${escapeHtml(task._id)}',this.value)">${statusOptions}</select>` : `<span class="muted">Управление доступно создателю задачи и владельцу проекта</span>`}
+      ${task.can_edit?`<button class="btn btn-secondary" type="button" onclick="editTask('${escapeHtml(task._id)}')">Редактировать</button>`:''}
       ${task.can_delete?`<button class="btn danger" type="button" onclick="removeTask('${escapeHtml(task._id)}')">Удалить</button>`:''}
     </div>
   </article>`;
@@ -187,6 +188,23 @@ async function moveTaskToStatus(task,status){
 async function changeStatus(id,status){
   const task=allTasks.find(item=>item._id===id);
   if(task)await moveTaskToStatus(task,status);
+}
+async function editTask(id){
+  const task=allTasks.find(item=>item._id===id);
+  if(!task)return;
+  const title=prompt('Название задачи:',task.title||'');
+  if(title===null)return;
+  if(!title.trim()){showMessage('Название задачи не может быть пустым.',true);return;}
+  const description=prompt('Описание задачи:',task.description||'');
+  if(description===null)return;
+  try{
+    await responseData(await fetch('/tasks/'+encodeURIComponent(id),{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title:title.trim(),description})
+    }));
+    showMessage('Задача обновлена.');
+    await loadTasks();
+  }catch(error){showMessage('Не удалось отредактировать задачу: '+error.message,true);}
 }
 async function removeTask(id){
   if(!confirm('Удалить задачу?'))return;

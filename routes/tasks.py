@@ -6,13 +6,19 @@ VALID_STATUSES = {"TODO", "IN_PROGRESS", "DONE"}
 
 
 def _permissions(task):
-    # Любой авторизованный участник может работать с любой задачей.
-    allowed = bool(session.get("user_id"))
+    # Создатель задачи и владелец проекта могут полностью управлять задачей.
+    user_id = session.get("user_id")
+    is_creator = bool(user_id and task and task.get("created_by_id") == user_id)
+    project = db.get_project_by_id(task.get("project_id")) if task else None
+    is_project_owner = bool(
+        user_id and project and project.get("owner_id") == user_id
+    )
+    can_manage = is_creator or is_project_owner
     return {
-        "can_change_status": allowed,
-        "can_edit": allowed,
-        "can_delete": allowed,
-        "can_assign": allowed,
+        "can_change_status": can_manage,
+        "can_edit": can_manage,
+        "can_delete": can_manage,
+        "can_assign": can_manage,
     }
 
 
@@ -23,7 +29,7 @@ def _task_with_names(task):
     creator = db.get_user_by_id(task.get("created_by_id")) if task.get("created_by_id") else None
     assignee = db.get_user_by_id(task.get("assignee_id")) if task.get("assignee_id") else None
     task["project_name"] = project.get("name") if project else "Проект не найден"
-    task["creator_username"] = creator.get("username") if creator else "Не указан"
+    task["creator_username"] = creator.get("username") if creator else "Автор не сохранён"
     task["assignee_username"] = assignee.get("username") if assignee else "Не назначен"
     task.update(_permissions(task))
     return task
@@ -94,7 +100,7 @@ def update_task(task_id):
     if error:
         return error
     if not _permissions(task)["can_edit"]:
-        return jsonify({"error": "Для редактирования необходимо войти в систему"}), 403
+        return jsonify({"error": "Редактировать задачу может только её создатель"}), 403
     data = request.get_json(silent=True) or {}
     if "status" in data:
         return jsonify({"error": "Статус изменяется отдельной кнопкой"}), 400
@@ -112,7 +118,7 @@ def assign_task(task_id):
     if error:
         return error
     if not _permissions(task)["can_assign"]:
-        return jsonify({"error": "Для назначения исполнителя необходимо войти в систему"}), 403
+        return jsonify({"error": "Назначать участника может только создатель задачи"}), 403
     data = request.get_json(silent=True) or {}
     assignee_id = data.get("assignee_id")
     if assignee_id and db.get_user_by_id(assignee_id) is None:
@@ -127,7 +133,7 @@ def move_task(task_id):
     if error:
         return error
     if not _permissions(task)["can_change_status"]:
-        return jsonify({"error": "Для изменения статуса необходимо войти в систему"}), 403
+        return jsonify({"error": "Изменять статус может только создатель задачи"}), 403
     data = request.get_json(silent=True) or {}
     status = data.get("status")
     if status not in VALID_STATUSES:
@@ -144,7 +150,7 @@ def delete_task(task_id):
     if error:
         return error
     if not _permissions(task)["can_delete"]:
-        return jsonify({"error": "Для удаления задачи необходимо войти в систему"}), 403
+        return jsonify({"error": "Удалить задачу может только её создатель"}), 403
     if not db.delete_task(task_id):
         return jsonify({"error": "Не удалось удалить задачу"}), 404
     return "", 204

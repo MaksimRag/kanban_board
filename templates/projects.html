@@ -8,8 +8,7 @@
     <input name="name" required>
     <label>Описание</label>
     <textarea name="description"></textarea>
-    <label>Владелец проекта</label>
-    <select name="owner_id" id="owner" required></select>
+    <p class="muted">Владельцем проекта автоматически станет пользователь, который его создаёт.</p>
     <button class="btn" type="submit">Создать проект</button>
   </form>
   <p id="message" class="muted"></p>
@@ -19,16 +18,6 @@
   <div id="projects">Загрузка...</div>
 </section>
 <script>
-async function loadOwners() {
-  const response = await fetch('/users/');
-  if (!response.ok) throw new Error('Не удалось загрузить участников');
-  const users = await response.json();
-  const select = document.getElementById('owner');
-  select.innerHTML = users.map(user =>
-    `<option value="${escapeHtml(user._id)}">${escapeHtml(user.username || user.full_name || 'Без никнейма')}</option>`
-  ).join('');
-  if (!users.length) select.innerHTML = '<option value="">Сначала добавьте участника</option>';
-}
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
@@ -42,8 +31,10 @@ async function loadProjects() {
     ? projects.map(project => `<div class="status">
         <b>${escapeHtml(project.name)}</b>
         <p>${escapeHtml(project.description || '')}</p>
-        <small>Владелец: ${escapeHtml(project.owner_username || 'Не указан')}</small>
-        <p><button class="btn danger" onclick="removeProject('${escapeHtml(project._id)}')">Удалить проект</button></p>
+        <small>Владелец: ${escapeHtml(project.owner_username || 'Неизвестный пользователь')}</small>
+        ${project.can_manage
+          ? `<p><button class="btn danger" onclick="removeProject('${escapeHtml(project._id)}')">Удалить проект</button></p>`
+          : `<small class="muted">Управлять проектом может только его создатель.</small>`}
       </div>`).join('')
     : 'Проектов пока нет.';
 }
@@ -58,18 +49,23 @@ document.getElementById('projectForm').addEventListener('submit', async event =>
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Не удалось создать проект');
-    message.textContent = 'Проект создан.';
+    message.textContent = 'Проект создан. Вы являетесь его владельцем.';
     event.target.reset();
     await loadProjects();
   } catch (error) { message.textContent = error.message; }
 });
 async function removeProject(id) {
-  if (!confirm('Удалить проект? Проверь, не удалятся ли связанные с ним задачи.')) return;
-  const response = await fetch('/projects/' + id, {method: 'DELETE'});
-  if (response.ok) loadProjects();
-  else alert('Не удалось удалить проект');
+  if (!confirm('Удалить проект и связанные с ним задачи?')) return;
+  try {
+    const response = await fetch('/projects/' + encodeURIComponent(id), {method: 'DELETE'});
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || 'Не удалось удалить проект');
+    }
+    await loadProjects();
+  } catch (error) { alert(error.message); }
 }
-Promise.all([loadOwners(), loadProjects()]).catch(error => {
+loadProjects().catch(error => {
   document.getElementById('projects').textContent = error.message;
 });
 </script>

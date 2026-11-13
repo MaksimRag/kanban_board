@@ -63,8 +63,8 @@
   </form>
 
   <form id="registerForm" class="hidden" novalidate>
-    <label for="full_name">ФИО</label>
-    <input id="full_name" name="full_name" autocomplete="name" minlength="5" maxlength="100" required>
+    <label for="full_name">ФИО <span style="font-weight:400;color:#687386">(необязательно)</span></label>
+    <input id="full_name" name="full_name" autocomplete="name" maxlength="100" placeholder="Можно не заполнять">
     <label for="username">Логин</label>
     <input id="username" name="username" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_]+" required>
     <label for="email">Email</label>
@@ -100,7 +100,6 @@ function getRussianValidationMessage(field) {
   const validity = field.validity;
 
   if (validity.valueMissing) {
-    if (field.id === 'full_name') return 'Введите ФИО.';
     if (field.id === 'username') return 'Введите логин.';
     if (field.id === 'email') return 'Введите адрес электронной почты.';
     if (field.id === 'confirmPassword') return 'Повторите пароль.';
@@ -114,7 +113,6 @@ function getRussianValidationMessage(field) {
   }
   if (validity.tooShort) {
     if (field.id === 'username') return 'Логин должен содержать не менее 3 символов.';
-    if (field.id === 'full_name') return 'ФИО должно содержать не менее 5 символов.';
     if (field.type === 'password') return 'Пароль должен содержать не менее 8 символов.';
     return 'Слишком короткое значение.';
   }

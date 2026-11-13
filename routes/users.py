@@ -39,7 +39,7 @@ def register():
     username = data.get("username", "")
     email = data.get("email", "")
     password = data.get("password", "")
-    full_name = data.get("full_name", "")
+    full_name = data.get("full_name") or ""
 
     if not all(isinstance(value, str) for value in (username, email, password, full_name)):
         return jsonify({"error": "Проверьте введённые данные"}), 400
@@ -48,12 +48,16 @@ def register():
     email = email.strip().lower()
     full_name = " ".join(full_name.split())
 
+    # ФИО необязательно. Если поле заполнено, проверяем его формат.
+    if full_name and (
+        len(full_name) < 5
+        or len(full_name) > 100
+        or not re.fullmatch(r"[A-Za-zА-Яа-яЁё -]+", full_name)
+        or len(full_name.split()) < 2
+    ):
+        return jsonify({"error": "Если указываете ФИО, введите фамилию и имя буквами"}), 400
     if not full_name:
-        return jsonify({"error": "Введите ФИО"}), 400
-    if len(full_name) < 5 or len(full_name) > 100 or not re.fullmatch(r"[A-Za-zА-Яа-яЁё -]+", full_name):
-        return jsonify({"error": "Проверьте ФИО: используйте буквы, пробелы и дефис"}), 400
-    if len(full_name.split()) < 2:
-        return jsonify({"error": "Укажите фамилию и имя"}), 400
+        full_name = None
     if not re.fullmatch(r"[A-Za-z0-9_]{3,30}", username):
         return jsonify({"error": "Логин должен содержать 3–30 символов: латинские буквы, цифры или _"}), 400
     if len(email) > 254 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
