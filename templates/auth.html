@@ -96,10 +96,47 @@ function clearMessage() {
   messageBox.className = 'message';
 }
 
+function getRussianValidationMessage(field) {
+  const validity = field.validity;
+
+  if (validity.valueMissing) {
+    if (field.id === 'full_name') return 'Введите ФИО.';
+    if (field.id === 'username') return 'Введите логин.';
+    if (field.id === 'email') return 'Введите адрес электронной почты.';
+    if (field.id === 'confirmPassword') return 'Повторите пароль.';
+    if (field.id === 'login') return 'Введите логин или Email.';
+    if (field.type === 'password') return 'Введите пароль.';
+    return 'Заполните обязательное поле.';
+  }
+
+  if (validity.typeMismatch && field.type === 'email') {
+    return 'Введите корректный адрес электронной почты.';
+  }
+  if (validity.tooShort) {
+    if (field.id === 'username') return 'Логин должен содержать не менее 3 символов.';
+    if (field.id === 'full_name') return 'ФИО должно содержать не менее 5 символов.';
+    if (field.type === 'password') return 'Пароль должен содержать не менее 8 символов.';
+    return 'Слишком короткое значение.';
+  }
+  if (validity.tooLong) {
+    if (field.id === 'username') return 'Логин не должен превышать 30 символов.';
+    if (field.id === 'email') return 'Email не должен превышать 254 символа.';
+    if (field.type === 'password') return 'Пароль не должен превышать 128 символов.';
+    return 'Слишком длинное значение.';
+  }
+  if (validity.patternMismatch && field.id === 'username') {
+    return 'Логин может содержать только латинские буквы, цифры и знак подчёркивания.';
+  }
+  if (validity.badInput) {
+    return 'Проверьте формат введённых данных.';
+  }
+  return 'Проверьте правильность заполнения полей.';
+}
+
 function validateForm(form) {
   for (const field of form.querySelectorAll('input')) {
     if (!field.checkValidity()) {
-      showMessage(field.validationMessage || 'Проверьте правильность заполнения полей.', 'error');
+      showMessage(getRussianValidationMessage(field), 'error');
       field.focus();
       return false;
     }

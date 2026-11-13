@@ -10,22 +10,22 @@
     <a class="btn" href="/task-form">Создать задачу</a>
     <a class="btn" href="/users-page">Сотрудники</a>
   </div>
-  <p id="connection" class="status">Проверка подключения...</p>
 </section>
 <section class="panel">
   <h2>Статистика задач</h2>
   <div id="stats" class="status">Загрузка...</div>
 </section>
 <script>
-async function loadHome(){
-  const c=document.getElementById('connection'), s=document.getElementById('stats');
-  try{
-    const r=await fetch('/health'); if(!r.ok) throw new Error('HTTP '+r.status);
-    const d=await r.json(); c.textContent='Flask: подключён ('+d.status+')';
-    const tr=await fetch('/tasks/stats'); if(!tr.ok) throw new Error('HTTP '+tr.status);
-    const x=await tr.json();
-    s.textContent=`Всего: ${x.total} | Новые: ${x.new} | В работе: ${x.in_progress} | Выполнены: ${x.done}`;
-  }catch(e){c.textContent='Ошибка подключения: '+e.message;s.textContent='Не удалось получить статистику';}
+async function loadHome() {
+  const stats = document.getElementById('stats');
+  try {
+    const response = await fetch('/tasks/stats');
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    stats.textContent = `Всего: ${data.total} | Новые: ${data.new} | В работе: ${data.in_progress} | Выполнены: ${data.done}`;
+  } catch (error) {
+    stats.textContent = 'Не удалось получить статистику';
+  }
 }
 loadHome();
 </script>
