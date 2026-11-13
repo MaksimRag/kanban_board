@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход и регистрация — Kanban Board</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f1f4f8;font:15px Arial,sans-serif;color:#202938}
+    .auth{width:min(420px,calc(100% - 32px));background:#fff;padding:30px;border-radius:14px;box-shadow:0 12px 40px #17243a18}
+    h1{margin:0 0 8px;font-size:25px;text-align:center}.subtitle{text-align:center;color:#687386;margin:0 0 24px}
+    .tabs{display:flex;background:#eef2f7;border-radius:8px;padding:4px;margin-bottom:22px}
+    .tabs button{flex:1;border:0;padding:11px;border-radius:6px;cursor:pointer;background:transparent;font-weight:600;color:#536176}
+    .tabs button.active{background:#315b91;color:white}label{display:block;margin:12px 0 6px;font-weight:600}
+    input{width:100%;padding:12px;border:1px solid #cbd2dc;border-radius:7px;font-size:15px}
+    .submit{width:100%;margin-top:20px;padding:12px;border:0;border-radius:7px;background:#315b91;color:white;font-size:15px;cursor:pointer}
+    .submit:hover{background:#24466f}.message{min-height:20px;margin:14px 0 0;text-align:center;color:#a33}.hidden{display:none}
+  </style>
+</head>
+<body>
+<section class="auth">
+  <h1>Kanban Board</h1><p class="subtitle">Система управления задачами</p>
+  <div class="tabs">
+    <button id="loginTab" class="active" type="button" onclick="showForm('login')">Авторизация</button>
+    <button id="registerTab" type="button" onclick="showForm('register')">Регистрация</button>
+  </div>
+  <form id="loginForm">
+    <label for="login">Логин или Email</label><input id="login" name="login" autocomplete="username" required>
+    <label for="loginPassword">Пароль</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+    <button class="submit" type="submit">Войти</button>
+  </form>
+  <form id="registerForm" class="hidden">
+    <label for="username">Логин</label><input id="username" name="username" autocomplete="username" required>
+    <label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required>
+    <label for="full_name">ФИО</label><input id="full_name" name="full_name" autocomplete="name" minlength="5" maxlength="100" required>
+    <label for="registerPassword">Пароль (не менее 8 символов)</label><input id="registerPassword" name="password" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="confirmPassword">Повторите пароль</label><input id="confirmPassword" name="confirm_password" type="password" autocomplete="new-password" minlength="8" required>
+    <button class="submit" type="submit">Зарегистрироваться</button>
+  </form>
+  <p id="message" class="message" role="status"></p>
+</section>
+<script>
+function showForm(mode) {
+  const login = mode === 'login';
+  document.getElementById('loginForm').classList.toggle('hidden', !login);
+  document.getElementById('registerForm').classList.toggle('hidden', login);
+  document.getElementById('loginTab').classList.toggle('active', login);
+  document.getElementById('registerTab').classList.toggle('active', !login);
+  document.getElementById('message').textContent = '';\n  document.getElementById('message').style.color = '#a33';
+}
+async function sendAuth(url, data) {
+  const response = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Не удалось выполнить запрос');
+  window.location.href = '/dashboard';
+}
+document.getElementById('loginForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  try { await sendAuth('/users/login', Object.fromEntries(new FormData(event.target))); }
+  catch (error) { document.getElementById('message').textContent = error.message; }
+});
+document.getElementById('registerForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = Object.fromEntries(new FormData(event.target));
+  if (form.password !== form.confirm_password) {
+    document.getElementById('message').textContent = 'Пароли не совпадают'; return;
+  }
+  delete form.confirm_password;
+  try {
+    const response = await fetch('/users/register', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(form)
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Не удалось зарегистрироваться');
+
+    event.target.reset();
+    showForm('login');
+    document.getElementById('message').textContent =
+      'Вы успешно зарегистрированы. Теперь войдите, используя логин или email и пароль.';
+    document.getElementById('message').style.color = '#247a42';
+    document.getElementById('login').value = form.username;
+    document.getElementById('loginPassword').focus();
+  } catch (error) {
+    document.getElementById('message').style.color = '#a33';
+    document.getElementById('message').textContent = error.message;
+  }
+});
+</script>
+</body>
+</html>
