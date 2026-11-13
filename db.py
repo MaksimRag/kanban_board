@@ -84,6 +84,7 @@ def _task_to_dict(doc):
     doc["_id"] = str(doc["_id"])
     doc["project_id"] = str(doc["project_id"])
     doc["assignee_id"] = str(doc["assignee_id"]) if doc.get("assignee_id") else None
+    doc["created_by_id"] = str(doc["created_by_id"]) if doc.get("created_by_id") else None
     return doc
 
 
@@ -225,7 +226,7 @@ def delete_project(project_id):
 # TASKS
 # ============================================================
 
-def create_task(project_id, title, description=None, assignee_id=None, status="TODO"):
+def create_task(project_id, title, description=None, assignee_id=None, status="TODO", created_by_id=None):
     project_oid = _parse_id(project_id)
     if project_oid is None:
         return None
@@ -241,6 +242,7 @@ def create_task(project_id, title, description=None, assignee_id=None, status="T
     doc = {
         "project_id": project_oid,
         "assignee_id": assignee_oid,
+        "created_by_id": _parse_id(created_by_id) if created_by_id else None,
         "title": title,
         "description": description,
         "status": status,

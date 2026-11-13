@@ -21,13 +21,13 @@
 <script>
 async function loadOwners() {
   const response = await fetch('/users/');
-  if (!response.ok) throw new Error('Не удалось загрузить сотрудников');
+  if (!response.ok) throw new Error('Не удалось загрузить участников');
   const users = await response.json();
   const select = document.getElementById('owner');
   select.innerHTML = users.map(user =>
-    `<option value="${user._id}">${escapeHtml(user.full_name || user.username)}</option>`
+    `<option value="${escapeHtml(user._id)}">${escapeHtml(user.username || user.full_name || 'Без никнейма')}</option>`
   ).join('');
-  if (!users.length) select.innerHTML = '<option value="">Сначала добавьте сотрудника</option>';
+  if (!users.length) select.innerHTML = '<option value="">Сначала добавьте участника</option>';
 }
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -42,8 +42,8 @@ async function loadProjects() {
     ? projects.map(project => `<div class="status">
         <b>${escapeHtml(project.name)}</b>
         <p>${escapeHtml(project.description || '')}</p>
-        <small>ID владельца: ${escapeHtml(project.owner_id || '')}</small>
-        <p><button class="btn danger" onclick="removeProject('${project._id}')">Удалить проект</button></p>
+        <small>Владелец: ${escapeHtml(project.owner_username || 'Не указан')}</small>
+        <p><button class="btn danger" onclick="removeProject('${escapeHtml(project._id)}')">Удалить проект</button></p>
       </div>`).join('')
     : 'Проектов пока нет.';
 }

@@ -10,6 +10,20 @@ import db
 users_bp = Blueprint("users", __name__, url_prefix="/users")
 
 
+
+
+def _can_manage_participants():
+    """Владелец хотя бы одного проекта может управлять общим списком участников."""
+    user_id = session.get("user_id")
+    return bool(user_id and db.list_projects(owner_id=user_id))
+
+
+def _owner_required():
+    if not _can_manage_participants():
+        return jsonify({"error": "Управлять участниками может только владелец проекта"}), 403
+    return None
+
+
 def _public_user(user):
     if not user:
         return user

@@ -1,33 +1,222 @@
 {% extends "base.html" %}
-{% block title %}Задачи — Kanban Board{% endblock %}
+{% block title %}Канбан-доска — Kanban Board{% endblock %}
 {% block content %}
-<section class="panel">
- <h2>Задачи</h2>
- <div class="actions">
-  <a class="btn" href="/task-form">Создать задачу</a>
-  <button class="btn" onclick="loadTasks()">Обновить список</button>
- </div>
- <label>Фильтр по проекту</label><select id="projectFilter" onchange="loadTasks()"><option value="">Все проекты</option></select>
- <label>Фильтр по статусу</label><select id="statusFilter" onchange="loadTasks()">
-  <option value="">Все статусы</option><option value="TODO">Новая</option><option value="IN_PROGRESS">В работе</option><option value="DONE">Выполнена</option>
- </select>
- <div id="stats" class="status"></div>
- <div id="tasks">Загрузка...</div>
+<section class="panel kanban-panel">
+  <div class="board-heading">
+    <div>
+      <h2>Канбан-доска</h2>
+      <p class="muted">Перетаскивайте карточки между колонками, чтобы менять статус задач.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="/task-form">＋ Создать задачу</a>
+      <button class="btn btn-secondary" type="button" onclick="loadTasks()">Обновить</button>
+    </div>
+  </div>
+
+  <div class="board-tools">
+    <div class="search-field">
+      <label for="taskSearch">Поиск</label>
+      <input id="taskSearch" type="search" placeholder="Название, описание, проект или участник..." autocomplete="off">
+    </div>
+    <div>
+      <label for="projectFilter">Проект</label>
+      <select id="projectFilter"><option value="">Все проекты</option></select>
+    </div>
+    <div class="board-summary" id="stats">Загрузка задач...</div>
+  </div>
+
+  <div id="message" class="notice" hidden role="status"></div>
+  <div class="board-columns" id="tasks">
+    <div class="empty-state">Загружаем задачи...</div>
+  </div>
 </section>
+
+<style>
+.kanban-panel{padding:24px;max-width:100%;overflow:hidden}
+.board-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:22px}
+.board-heading h2{margin:0 0 6px;font-size:23px}
+.board-heading p{margin:0}
+.board-tools{display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(190px,.8fr) minmax(210px,1fr);gap:14px;align-items:end;margin-bottom:18px}
+.board-tools label{display:block;font-size:13px;font-weight:700;color:#536176;margin-bottom:6px}
+.board-tools input,.board-tools select{display:block;width:100%;max-width:none;height:42px;margin:0;padding:9px 12px;border:1px solid #ccd5e1;border-radius:8px;background:#fff}
+.board-summary{font-size:13px;color:#59677b;background:#f2f5f9;border:1px solid #e4eaf1;border-radius:8px;padding:12px 14px;min-height:42px}
+.board-columns{display:grid;grid-template-columns:repeat(3,minmax(260px,1fr));gap:15px;align-items:start;overflow-x:auto;padding:2px 2px 12px}
+.kanban-column{background:#f2f5f9;border:1px solid #e0e6ee;border-radius:11px;min-height:330px;overflow:hidden;transition:border-color .15s,background .15s}
+.kanban-column.drag-over{background:#e8f0fb;border-color:#6d93c2;box-shadow:inset 0 0 0 2px #9bb6d7}
+.column-header{display:flex;align-items:center;justify-content:space-between;padding:14px 15px;border-bottom:1px solid #e0e6ee;background:#edf1f6}
+.column-title{display:flex;align-items:center;gap:9px;font-weight:700;color:#29384d}
+.column-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot-TODO{background:#8292a8}.dot-IN_PROGRESS{background:#e0a43b}.dot-DONE{background:#3a9a68}
+.column-count{font-size:12px;font-weight:700;color:#536176;background:#fff;border:1px solid #dfe5ec;border-radius:20px;padding:3px 9px}
+.column-content{padding:11px;display:flex;flex-direction:column;gap:10px;min-height:270px}
+.task-card{background:#fff;border:1px solid #e0e6ed;border-radius:9px;padding:13px 13px 12px;box-shadow:0 2px 5px #1b2a3a0a;cursor:grab;transition:transform .15s,box-shadow .15s,border-color .15s}
+.task-card:hover{border-color:#c3d1e1;box-shadow:0 4px 12px #1b2a3a12;transform:translateY(-1px)}
+.task-card:active{cursor:grabbing}
+.task-card.dragging{opacity:.45;transform:rotate(1deg)}
+.task-card h3{font-size:14px;line-height:1.4;margin:0 0 7px;color:#243247;overflow-wrap:anywhere}
+.task-description{font-size:12px;line-height:1.5;color:#667387;margin:0 0 11px;white-space:pre-wrap;overflow-wrap:anywhere}
+.task-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+.task-status{font-size:10px;font-weight:700;letter-spacing:.02em;padding:4px 8px;border-radius:20px;background:#edf1f6;color:#596a80}
+.status-IN_PROGRESS{background:#fff3dc;color:#946313}
+.status-DONE{background:#e5f5eb;color:#287348}
+.drag-hint{font-size:10px;color:#a0aaba;white-space:nowrap}
+.task-meta{display:grid;gap:4px;padding-top:9px;border-top:1px solid #edf0f4;font-size:11px;color:#718096}
+.task-meta span{overflow-wrap:anywhere}
+.task-actions{display:flex;align-items:center;gap:7px;margin-top:11px}
+.task-actions select{flex:1;min-width:0;height:31px;padding:4px 7px;margin:0;font-size:11px;border:1px solid #d6dee8;border-radius:6px;background:#fff}
+.task-actions .btn{font-size:11px;padding:7px 9px}
+.btn-secondary{background:#e8edf4;color:#34445b}
+.btn-secondary:hover{background:#dbe4ef}
+.notice{padding:11px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
+.empty-column{border:1px dashed #d4dde7;border-radius:8px;padding:25px 12px;text-align:center;color:#8a96a7;font-size:12px;background:#f8fafc}
+.empty-state{padding:28px 16px;text-align:center;color:#748196;background:#f7f9fb;border:1px dashed #d5dee8;border-radius:10px}
+@media(max-width:850px){.board-columns{grid-template-columns:repeat(3,minmax(245px,1fr))}.board-tools{grid-template-columns:1fr 1fr}.board-summary{grid-column:1/-1}}
+@media(max-width:600px){.board-heading{flex-direction:column}.board-tools{grid-template-columns:1fr}.board-summary{grid-column:auto}.kanban-panel{padding:16px}.board-columns{grid-template-columns:repeat(3,minmax(250px,82vw))}}
+</style>
+
 <script>
-async function loadTasks(){
- const [pr]=await Promise.all([fetch('/projects/')]);const projects=await pr.json();
- const pf=document.getElementById('projectFilter'),old=pf.value;
- pf.innerHTML='<option value="">Все проекты</option>'+projects.map(p=>`<option value="${p._id}">${p.name}</option>`).join('');
- pf.value=old;
- const q=new URLSearchParams();if(pf.value)q.set('project_id',pf.value);if(document.getElementById('statusFilter').value)q.set('status',document.getElementById('statusFilter').value);
- const r=await fetch('/tasks/?'+q.toString());const tasks=await r.json();
- document.getElementById('tasks').innerHTML=tasks.length?tasks.map(t=>`<div class="status"><b>${t.title}</b><p>${t.description||''}</p><small>Статус: ${t.status} | ID проекта: ${t.project_id}</small><p class="actions"><button class="btn" onclick="changeStatus('${t._id}','IN_PROGRESS')">В работу</button><button class="btn" onclick="changeStatus('${t._id}','DONE')">Выполнена</button><button class="btn danger" onclick="removeTask('${t._id}')">Удалить</button></p></div>`).join(''):'Задач нет.';
- const sr=await fetch('/tasks/stats'+(pf.value?'?project_id='+pf.value:''));const st=await sr.json();
- document.getElementById('stats').textContent=`Всего: ${st.total} | Новые: ${st.new} | В работе: ${st.in_progress} | Выполнены: ${st.done}`;
+const statusNames={TODO:'Новые',IN_PROGRESS:'В работе',DONE:'Готово'};
+const statusOrder=['TODO','IN_PROGRESS','DONE'];
+let allTasks=[];
+let draggedTaskId=null;
+
+function escapeHtml(value){
+  return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 }
-async function changeStatus(id,status){const r=await fetch('/tasks/'+id+'/move',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});if(r.ok)loadTasks();else alert('Не удалось изменить статус');}
-async function removeTask(id){if(!confirm('Удалить задачу?'))return;const r=await fetch('/tasks/'+id,{method:'DELETE'});if(r.ok)loadTasks();else alert('Не удалось удалить задачу');}
-loadTasks().catch(e=>document.getElementById('tasks').textContent='Ошибка: '+e.message);
+function showMessage(text,error=false){
+  const box=document.getElementById('message');
+  box.hidden=false;box.textContent=text;
+  box.style.background=error?'#fdebed':'#e8f6ed';
+  box.style.color=error?'#982f3b':'#246b46';
+}
+async function responseData(response){
+  let data={};try{data=await response.json();}catch(_){}
+  if(!response.ok)throw new Error(data.error||`Ошибка запроса: ${response.status}`);
+  return data;
+}
+function filteredTasks(){
+  const query=document.getElementById('taskSearch').value.trim().toLocaleLowerCase('ru');
+  const projectId=document.getElementById('projectFilter').value;
+  return allTasks.filter(task=>{
+    if(projectId&&task.project_id!==projectId)return false;
+    const text=[task.title,task.description,task.project_name,task.creator_username,task.assignee_username]
+      .join(' ').toLocaleLowerCase('ru');
+    return !query||text.includes(query);
+  });
+}
+function renderTask(task){
+  const statusOptions=statusOrder.map(status=>`<option value="${status}" ${task.status===status?'selected':''}>${statusNames[status]}</option>`).join('');
+  return `<article class="task-card" draggable="true" data-task-id="${escapeHtml(task._id)}"
+      ondragstart="onCardDragStart(event)" ondragend="onCardDragEnd(event)">
+    <div class="task-card-top">
+      <span class="task-status status-${escapeHtml(task.status)}">${escapeHtml(statusNames[task.status]||task.status)}</span>
+      <span class="drag-hint">⠿ Перетащить</span>
+    </div>
+    <h3>${escapeHtml(task.title)}</h3>
+    ${task.description?`<p class="task-description">${escapeHtml(task.description)}</p>`:''}
+    <div class="task-meta">
+      <span><b>Проект:</b> ${escapeHtml(task.project_name||'Не указан')}</span>
+      <span><b>Создал:</b> ${escapeHtml(task.creator_username||'Не указан')}</span>
+      <span><b>Участник:</b> ${escapeHtml(task.assignee_username||'Не назначен')}</span>
+    </div>
+    <div class="task-actions">
+      <select aria-label="Изменить статус задачи" onchange="changeStatus('${escapeHtml(task._id)}',this.value)">${statusOptions}</select>
+      ${task.can_delete?`<button class="btn danger" type="button" onclick="removeTask('${escapeHtml(task._id)}')">Удалить</button>`:''}
+    </div>
+  </article>`;
+}
+function renderBoard(){
+  const tasks=filteredTasks();
+  const board=document.getElementById('tasks');
+  board.innerHTML=statusOrder.map(status=>{
+    const items=tasks.filter(task=>task.status===status);
+    return `<section class="kanban-column" data-status="${status}" ondragover="onColumnDragOver(event)" ondragleave="onColumnDragLeave(event)" ondrop="onColumnDrop(event)">
+      <header class="column-header">
+        <span class="column-title"><i class="column-dot dot-${status}"></i>${statusNames[status]}</span>
+        <span class="column-count">${items.length}</span>
+      </header>
+      <div class="column-content">${items.length?items.map(renderTask).join(''):'<div class="empty-column">Перетащите задачу сюда</div>'}</div>
+    </section>`;
+  }).join('');
+  document.getElementById('stats').textContent=
+    `Показано ${tasks.length} из ${allTasks.length} задач · Новые: ${tasks.filter(t=>t.status==='TODO').length} · В работе: ${tasks.filter(t=>t.status==='IN_PROGRESS').length} · Готово: ${tasks.filter(t=>t.status==='DONE').length}`;
+}
+function onCardDragStart(event){
+  const card=event.currentTarget;
+  draggedTaskId=card.dataset.taskId;
+  card.classList.add('dragging');
+  event.dataTransfer.effectAllowed='move';
+  event.dataTransfer.setData('text/plain',draggedTaskId);
+}
+function onCardDragEnd(event){
+  event.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.kanban-column').forEach(column=>column.classList.remove('drag-over'));
+  draggedTaskId=null;
+}
+function onColumnDragOver(event){
+  event.preventDefault();
+  event.dataTransfer.dropEffect='move';
+  event.currentTarget.classList.add('drag-over');
+}
+function onColumnDragLeave(event){
+  if(!event.currentTarget.contains(event.relatedTarget))event.currentTarget.classList.remove('drag-over');
+}
+async function onColumnDrop(event){
+  event.preventDefault();
+  const column=event.currentTarget;
+  column.classList.remove('drag-over');
+  const id=event.dataTransfer.getData('text/plain')||draggedTaskId;
+  const status=column.dataset.status;
+  if(!id)return;
+  const task=allTasks.find(item=>item._id===id);
+  if(!task||task.status===status)return;
+  await moveTaskToStatus(task,status);
+}
+async function moveTaskToStatus(task,status){
+  try{
+    const position=allTasks.filter(item=>item.project_id===task.project_id&&item.status===status).length;
+    await responseData(await fetch('/tasks/'+encodeURIComponent(task._id)+'/move',{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({status,position})
+    }));
+    task.status=status;
+    showMessage(`Задача «${task.title}» перемещена в колонку «${statusNames[status]}».`);
+    await loadTasks();
+  }catch(error){showMessage('Не удалось переместить задачу: '+error.message,true);}
+}
+async function changeStatus(id,status){
+  const task=allTasks.find(item=>item._id===id);
+  if(task)await moveTaskToStatus(task,status);
+}
+async function removeTask(id){
+  if(!confirm('Удалить задачу?'))return;
+  try{
+    const response=await fetch('/tasks/'+encodeURIComponent(id),{method:'DELETE'});
+    if(!response.ok)await responseData(response);
+    showMessage('Задача удалена.');
+    await loadTasks();
+  }catch(error){showMessage('Не удалось удалить задачу: '+error.message,true);}
+}
+async function loadTasks(){
+  const board=document.getElementById('tasks');
+  board.innerHTML='<div class="empty-state">Загружаем задачи...</div>';
+  try{
+    const [projects,tasks]=await Promise.all([
+      responseData(await fetch('/projects/')),
+      responseData(await fetch('/tasks/'))
+    ]);
+    const filter=document.getElementById('projectFilter'),previous=filter.value;
+    filter.innerHTML='<option value="">Все проекты</option>'+projects.map(p=>`<option value="${escapeHtml(p._id)}">${escapeHtml(p.name)}</option>`).join('');
+    filter.value=previous;
+    allTasks=tasks;
+    renderBoard();
+  }catch(error){
+    board.innerHTML=`<div class="empty-state">${escapeHtml('Не удалось загрузить задачи: '+error.message)}</div>`;
+    showMessage(error.message,true);
+  }
+}
+document.getElementById('taskSearch').addEventListener('input',renderBoard);
+document.getElementById('projectFilter').addEventListener('change',renderBoard);
+loadTasks();
 </script>
 {% endblock %}

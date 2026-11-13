@@ -7,7 +7,7 @@
   <label>Название задачи</label><input name="title" required>
   <label>Описание</label><textarea name="description"></textarea>
   <label>Проект</label><select name="project_id" id="project" required></select>
-  <label>Исполнитель</label><select name="assignee_id" id="assignee"><option value="">Не назначен</option></select>
+  <label>Участник</label><select name="assignee_id" id="assignee"><option value="">Не назначен</option></select>
   <label>Статус</label><select name="status"><option value="TODO">Новая</option><option value="IN_PROGRESS">В работе</option><option value="DONE">Выполнена</option></select>
   <button class="btn" type="submit">Сохранить задачу</button>
   <a class="btn" href="/tasks-page">К списку задач</a>
@@ -19,12 +19,17 @@ async function initForm(){
  const [pr,ur]=await Promise.all([fetch('/projects/'),fetch('/users/')]);
  const projects=await pr.json(),users=await ur.json();
  document.getElementById('project').innerHTML=projects.map(p=>`<option value="${p._id}">${p.name}</option>`).join('');
- document.getElementById('assignee').innerHTML='<option value="">Не назначен</option>'+users.map(u=>`<option value="${u._id}">${u.full_name||u.username}</option>`).join('');
+ document.getElementById('assignee').innerHTML='<option value="">Не назначен</option>'+users.map(u=>`<option value="${u._id}" data-username="${u.username}">${u.username}</option>`).join('');
 }
 document.getElementById('taskForm').addEventListener('submit',async e=>{
  e.preventDefault();const data=Object.fromEntries(new FormData(e.target));if(!data.assignee_id)data.assignee_id=null;
  const r=await fetch('/tasks/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
- const d=await r.json();document.getElementById('message').textContent=r.ok?'Задача создана. ID: '+d._id:(d.error||'Ошибка');
+ const d=await r.json();
+ const selectedAssignee=document.getElementById('assignee');
+ const assigneeName=selectedAssignee.selectedOptions[0]?.dataset.username || 'Не назначен';
+ document.getElementById('message').textContent=r.ok
+   ? 'Задача создана. Участник: '+assigneeName
+   : (d.error||'Ошибка');
  if(r.ok)e.target.reset();
 });
 initForm().catch(e=>document.getElementById('message').textContent='Ошибка загрузки данных: '+e.message);

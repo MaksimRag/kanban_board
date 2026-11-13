@@ -1,87 +1,108 @@
 {% extends "base.html" %}
-{% block title %}Сотрудники — Kanban Board{% endblock %}
+{% block title %}Участники — Kanban Board{% endblock %}
 {% block content %}
 <section class="panel">
-  <h2>Управление сотрудниками</h2>
-  <p class="muted">Добавление, просмотр, редактирование и удаление сотрудников.</p>
+  <h2>Участники</h2>
+  <p class="muted">Список пользователей, которые могут быть назначены исполнителями задач.</p>
+  <p id="permissionNote" class="muted">Проверка прав...</p>
 </section>
-<section class="panel">
-  <h2>Добавить сотрудника</h2>
+<section class="panel" id="managePanel" hidden>
+  <h2>Добавить участника</h2>
   <form id="userForm">
-    <label>Логин</label><input name="username" required>
+    <label>Никнейм</label><input name="username" required>
     <label>Email</label><input name="email" type="email" required>
     <label>ФИО</label><input name="full_name">
-    <button class="btn" type="submit">Добавить сотрудника</button>
+    <button class="btn" type="submit">Добавить участника</button>
   </form>
-  <p id="message" class="muted"></p>
+  <p id="message" class="muted" role="status"></p>
 </section>
 <section class="panel">
-  <h2>Список сотрудников</h2>
-  <button class="btn" type="button" onclick="loadUsers()">Обновить список</button>
-  <div id="users">Загрузка сотрудников...</div>
+  <div class="section-heading">
+    <h2>Список участников</h2>
+    <button class="btn" type="button" onclick="loadUsers()">Обновить список</button>
+  </div>
+  <div id="users" class="participant-list">Загрузка участников...</div>
 </section>
+<style>
+.section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.participant-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:16px}
+.participant-card{background:#f3f6fa;border:1px solid #e1e7ef;border-radius:10px;padding:16px}
+.participant-card h3{margin:0 0 10px;font-size:16px}
+.participant-card p{margin:6px 0;color:#5c6879;overflow-wrap:anywhere}
+.participant-actions{display:flex;gap:8px;margin-top:14px}
+</style>
 <script>
+let canManageParticipants = false;
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
   })[char]);
 }
+async function loadPermissions() {
+  const response = await fetch('/users/can-manage');
+  const result = await response.json();
+  canManageParticipants = response.ok && result.can_manage === true;
+  document.getElementById('managePanel').hidden = !canManageParticipants;
+  document.getElementById('permissionNote').textContent = canManageParticipants
+    ? 'Вы владелец проекта — вам доступно управление участниками.'
+    : 'Просмотр доступен всем. Добавлять, редактировать и удалять участников может только владелец проекта.';
+}
 async function loadUsers() {
   const container = document.getElementById('users');
   try {
     const response = await fetch('/users/');
-    if (!response.ok) throw new Error('Ошибка получения сотрудников');
+    if (!response.ok) throw new Error('Не удалось загрузить список участников');
     const users = await response.json();
     container.innerHTML = users.length ? users.map(user => `
-      <div class="status">
+      <article class="participant-card">
         <h3>${escapeHtml(user.full_name || user.username)}</h3>
-        <p>Логин: ${escapeHtml(user.username)}</p>
+        <p>Никнейм: ${escapeHtml(user.username)}</p>
         <p>Email: ${escapeHtml(user.email)}</p>
-        <div class="actions">
-          <button class="btn" type="button" onclick="editUser('${user._id}')">Редактировать</button>
-          <button class="btn danger" type="button" onclick="deleteUser('${user._id}')">Удалить</button>
-        </div>
-      </div>`).join('') : 'Сотрудников пока нет.';
+        ${canManageParticipants ? `<div class="participant-actions">
+          <button class="btn" type="button" onclick="editUser('${escapeHtml(user._id)}')">Редактировать</button>
+          <button class="btn danger" type="button" onclick="deleteUser('${escapeHtml(user._id)}')">Удалить</button>
+        </div>` : ''}
+      </article>`).join('') : '<p class="muted">Участников пока нет.</p>';
   } catch (error) { container.textContent = error.message; }
 }
-document.getElementById('userForm').addEventListener('submit', async event => {
+document.getElementById('userForm')?.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.target;
-  const data = Object.fromEntries(new FormData(form));
   const message = document.getElementById('message');
   try {
     const response = await fetch('/users/', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(data)
+      body: JSON.stringify(Object.fromEntries(new FormData(form)))
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Не удалось добавить сотрудника');
-    message.textContent = 'Сотрудник успешно добавлен.';
+    if (!response.ok) throw new Error(result.error || 'Не удалось добавить участника');
+    message.textContent = 'Участник добавлен.';
     form.reset();
     await loadUsers();
   } catch (error) { message.textContent = error.message; }
 });
 async function editUser(id) {
-  const username = prompt('Введите новый логин:');
+  if (!canManageParticipants) return;
+  const username = prompt('Введите новый никнейм:');
   if (username === null || !username.trim()) return;
   const email = prompt('Введите новый Email:');
   if (email === null || !email.trim()) return;
   const full_name = prompt('Введите новое ФИО:');
   if (full_name === null) return;
   try {
-    const response = await fetch('/users/' + id, {
+    const response = await fetch('/users/' + encodeURIComponent(id), {
       method: 'PATCH', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({username: username.trim(), email: email.trim(), full_name: full_name.trim()})
     });
-    const result = await response.json();
+    const result = response.status === 204 ? {} : await response.json();
     if (!response.ok) throw new Error(result.error || 'Ошибка редактирования');
     await loadUsers();
   } catch (error) { alert(error.message); }
 }
 async function deleteUser(id) {
-  if (!confirm('Вы действительно хотите удалить сотрудника?')) return;
+  if (!canManageParticipants || !confirm('Удалить участника?')) return;
   try {
-    const response = await fetch('/users/' + id, {method: 'DELETE'});
+    const response = await fetch('/users/' + encodeURIComponent(id), {method: 'DELETE'});
     if (!response.ok) {
       const result = await response.json();
       throw new Error(result.error || 'Ошибка удаления');
@@ -89,6 +110,8 @@ async function deleteUser(id) {
     await loadUsers();
   } catch (error) { alert(error.message); }
 }
-loadUsers();
+(async function init(){ try { await loadPermissions(); } catch (_) {
+  document.getElementById('permissionNote').textContent = 'Не удалось проверить права управления.';
+} await loadUsers(); })();
 </script>
 {% endblock %}

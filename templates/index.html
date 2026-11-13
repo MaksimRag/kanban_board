@@ -2,31 +2,62 @@
 {% block title %}Главная — Kanban Board{% endblock %}
 {% block content %}
 <section class="panel">
-  <h2>Панель проверки</h2>
-  <p>Стартовая страница приложения. Используйте кнопки сверху для перехода между разделами.</p>
+  <h2>Главная</h2>
+  <p>Панель управления проектами и задачами.</p>
   <div class="actions">
     <a class="btn" href="/projects-page">Открыть проекты</a>
-    <a class="btn" href="/tasks-page">Открыть задачи</a>
+    <a class="btn" href="/tasks-page">Все задачи</a>
     <a class="btn" href="/task-form">Создать задачу</a>
-    <a class="btn" href="/users-page">Сотрудники</a>
+    <a class="btn" href="/users-page">Участники</a>
   </div>
 </section>
+
 <section class="panel">
   <h2>Статистика задач</h2>
-  <div id="stats" class="status">Загрузка...</div>
+  <div id="stats" class="status">Загрузка статистики...</div>
 </section>
+
+<section class="panel">
+  <div class="actions" style="justify-content:space-between;align-items:center">
+    <h2 style="margin:0">Задачи</h2>
+    <button class="btn" type="button" onclick="loadHomeTasks()">Обновить</button>
+  </div>
+  <div id="homeTasks">Загрузка задач...</div>
+</section>
+
+<style>
+.home-task { background:#eef2f7; border-radius:7px; padding:13px; margin:10px 0; }
+.home-task small { display:block; color:#536176; line-height:1.6; }
+</style>
 <script>
-async function loadHome() {
-  const stats = document.getElementById('stats');
+const homeStatusNames = {TODO:'Новая', IN_PROGRESS:'В работе', DONE:'Выполнена'};
+async function loadHomeTasks() {
+  const list=document.getElementById('homeTasks');
   try {
-    const response = await fetch('/tasks/stats');
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const data = await response.json();
-    stats.textContent = `Всего: ${data.total} | Новые: ${data.new} | В работе: ${data.in_progress} | Выполнены: ${data.done}`;
-  } catch (error) {
-    stats.textContent = 'Не удалось получить статистику';
+    const [statsResponse,tasksResponse]=await Promise.all([fetch('/tasks/stats'),fetch('/tasks/')]);
+    if(!statsResponse.ok || !tasksResponse.ok) throw new Error('Не удалось получить данные');
+    const stats=await statsResponse.json();
+    const tasks=await tasksResponse.json();
+    document.getElementById('stats').textContent=
+      `Всего: ${stats.total} | Новые: ${stats.new} | В работе: ${stats.in_progress} | Выполнены: ${stats.done}`;
+    if (!tasks.length) {
+      list.textContent='Пока нет созданных задач.';
+      return;
+    }
+    list.innerHTML=tasks.slice(0,8).map(task=>`
+      <div class="home-task">
+        <b>${task.title}</b>
+        <p>${task.description || ''}</p>
+        <small>Статус: ${homeStatusNames[task.status] || task.status}</small>
+        <small>Проект: ${task.project_name || 'Не указан'}</small>
+        <small>Создал: ${task.creator_username || 'Не указан'} | Исполнитель: ${task.assignee_username || 'Не назначен'}</small>
+      </div>
+    `).join('');
+  } catch(error) {
+    list.textContent='Не удалось загрузить задачи: '+error.message;
+    document.getElementById('stats').textContent='Не удалось загрузить статистику.';
   }
 }
-loadHome();
+loadHomeTasks();
 </script>
 {% endblock %}
