@@ -78,3 +78,31 @@ def delete_project(project_id):
     if not db.delete_project(project_id):
         return jsonify({"error": "Не удалось удалить проект"}), 404
     return "", 204
+
+
+@projects_bp.route("/<project_id>/transfer-owner", methods=["POST"])
+def transfer_project_owner(project_id):
+    project = db.get_project_by_id(project_id)
+    if project is None:
+        return jsonify({"error": "Проект не найден"}), 404
+    denied = _owner_required(project)
+    if denied:
+        return denied
+
+    data = request.get_json(silent=True) or {}
+    new_owner_id = data.get("new_owner_id")
+    if not new_owner_id:
+        return jsonify({"error": "Выберите нового владельца"}), 400
+    if new_owner_id == session.get("user_id"):
+        return jsonify({"error": "Вы уже являетесь владельцем этого проекта"}), 400
+    new_owner = db.get_user_by_id(new_owner_id)
+    if new_owner is None:
+        return jsonify({"error": "Выбранный пользователь не найден"}), 404
+
+    updated = db.transfer_project_owner(project_id, new_owner_id)
+    if updated is None:
+        return jsonify({"error": "Не удалось передать владение проектом"}), 500
+    return jsonify({
+        "message": "Владение проектом передано",
+        "project": _project_with_owner(updated),
+    }), 200

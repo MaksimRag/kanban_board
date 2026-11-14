@@ -29,8 +29,14 @@ def _task_with_names(task):
     creator = db.get_user_by_id(task.get("created_by_id")) if task.get("created_by_id") else None
     assignee = db.get_user_by_id(task.get("assignee_id")) if task.get("assignee_id") else None
     task["project_name"] = project.get("name") if project else "Проект не найден"
-    task["creator_username"] = creator.get("username") if creator else "Автор не сохранён"
-    task["assignee_username"] = assignee.get("username") if assignee else "Не назначен"
+    task["creator_username"] = (
+        creator.get("username") if creator
+        else ("Удалённый пользователь" if task.get("created_by_deleted") else "Автор не сохранён")
+    )
+    task["assignee_username"] = (
+        assignee.get("username") if assignee
+        else ("Удалённый пользователь" if task.get("assignee_deleted") else "Не назначен")
+    )
     task.update(_permissions(task))
     return task
 

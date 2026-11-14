@@ -208,6 +208,22 @@ def update_project(project_id, **fields):
     return get_project_by_id(project_id)
 
 
+def transfer_project_owner(project_id, new_owner_id):
+    """Передаёт владение проектом существующему пользователю."""
+    project_oid = _parse_id(project_id)
+    owner_oid = _parse_id(new_owner_id)
+    if project_oid is None or owner_oid is None:
+        return None
+    database = get_db()
+    if database.users.find_one({"_id": owner_oid}) is None:
+        return None
+    result = database.projects.update_one(
+        {"_id": project_oid},
+        {"$set": {"owner_id": owner_oid}}
+    )
+    return get_project_by_id(project_id) if result.matched_count else None
+
+
 def delete_project(project_id):
     """Удаляет проект и все его задачи (каскадное удаление)."""
     oid = _parse_id(project_id)

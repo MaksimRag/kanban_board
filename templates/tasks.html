@@ -26,6 +26,25 @@
   </div>
 
   <div id="message" class="notice" hidden role="status"></div>
+  <div id="editTaskModal" class="task-modal" hidden>
+    <div class="task-modal-backdrop" onclick="closeEditTaskModal()"></div>
+    <section class="task-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editTaskHeading">
+      <div class="task-modal-header">
+        <h2 id="editTaskHeading">Редактирование задачи</h2>
+        <button class="task-modal-close" type="button" aria-label="Закрыть" onclick="closeEditTaskModal()">×</button>
+      </div>
+      <form id="editTaskForm">
+        <label for="editTaskTitle">Название задачи</label>
+        <input id="editTaskTitle" name="title" type="text" maxlength="200" required>
+        <label for="editTaskDescription">Описание</label>
+        <textarea id="editTaskDescription" name="description" rows="5"></textarea>
+        <div class="task-modal-actions">
+          <button class="btn btn-secondary" type="button" onclick="closeEditTaskModal()">Отмена</button>
+          <button class="btn" id="saveTaskButton" type="submit">Сохранить изменения</button>
+        </div>
+      </form>
+    </section>
+  </div>
   <div class="board-columns" id="tasks">
     <div class="empty-state">Загружаем задачи...</div>
   </div>
@@ -70,6 +89,17 @@
 .notice{padding:11px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
 .empty-column{border:1px dashed #d4dde7;border-radius:8px;padding:25px 12px;text-align:center;color:#8a96a7;font-size:12px;background:#f8fafc}
 .empty-state{padding:28px 16px;text-align:center;color:#748196;background:#f7f9fb;border:1px dashed #d5dee8;border-radius:10px}
+.task-modal[hidden]{display:none}
+.task-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px}
+.task-modal-backdrop{position:absolute;inset:0;background:rgba(18,29,45,.58)}
+.task-modal-dialog{position:relative;width:min(100%,520px);background:#fff;border-radius:14px;padding:22px;box-shadow:0 18px 55px rgba(12,24,40,.25)}
+.task-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.task-modal-header h2{margin:0;font-size:20px;color:#243247}
+.task-modal-close{width:36px;height:36px;border:0;border-radius:8px;background:#edf1f6;color:#34445b;font-size:24px;cursor:pointer}
+.task-modal-dialog label{display:block;margin:13px 0 6px;font-size:13px;font-weight:700;color:#536176}
+.task-modal-dialog input,.task-modal-dialog textarea{display:block;width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #ccd5e1;border-radius:8px;font:inherit}
+.task-modal-dialog textarea{resize:vertical;min-height:110px}
+.task-modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
 @media(max-width:850px){.board-columns{grid-template-columns:repeat(3,minmax(245px,1fr))}.board-tools{grid-template-columns:1fr 1fr}.board-summary{grid-column:1/-1}}
 @media(max-width:600px){.board-heading{flex-direction:column}.board-tools{grid-template-columns:1fr}.board-summary{grid-column:auto}.kanban-panel{padding:16px}.board-columns{grid-template-columns:repeat(3,minmax(250px,82vw))}}
 </style>
@@ -189,23 +219,49 @@ async function changeStatus(id,status){
   const task=allTasks.find(item=>item._id===id);
   if(task)await moveTaskToStatus(task,status);
 }
-async function editTask(id){
+let editingTaskId=null;
+function editTask(id){
   const task=allTasks.find(item=>item._id===id);
-  if(!task)return;
-  const title=prompt('Название задачи:',task.title||'');
-  if(title===null)return;
-  if(!title.trim()){showMessage('Название задачи не может быть пустым.',true);return;}
-  const description=prompt('Описание задачи:',task.description||'');
-  if(description===null)return;
-  try{
-    await responseData(await fetch('/tasks/'+encodeURIComponent(id),{
-      method:'PATCH',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({title:title.trim(),description})
-    }));
-    showMessage('Задача обновлена.');
-    await loadTasks();
-  }catch(error){showMessage('Не удалось отредактировать задачу: '+error.message,true);}
+  if(!task){showMessage('Не удалось найти задачу для редактирования. Обновите доску.',true);return;}
+  editingTaskId=id;
+  document.getElementById('editTaskTitle').value=task.title||'';
+  document.getElementById('editTaskDescription').value=task.description||'';
+  document.getElementById('editTaskModal').hidden=false;
+  document.body.style.overflow='hidden';
+  document.getElementById('editTaskTitle').focus();
 }
+function closeEditTaskModal(){
+  document.getElementById('editTaskModal').hidden=true;
+  document.body.style.overflow='';
+  editingTaskId=null;
+}
+document.getElementById('editTaskForm').addEventListener('submit',async function(event){
+  event.preventDefault();
+  if(!editingTaskId)return;
+  const title=document.getElementById('editTaskTitle').value.trim();
+  const description=document.getElementById('editTaskDescription').value;
+  if(!title){showMessage('Название задачи не может быть пустым.',true);return;}
+  const button=document.getElementById('saveTaskButton');
+  button.disabled=true;button.textContent='Сохранение...';
+  try{
+    await responseData(await fetch('/tasks/'+encodeURIComponent(editingTaskId),{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,description})
+    }));
+    closeEditTaskModal();
+    showMessage('Задача успешно обновлена.');
+    await loadTasks();
+  }catch(error){
+    showMessage('Не удалось отредактировать задачу: '+error.message,true);
+  }finally{
+    button.disabled=false;button.textContent='Сохранить изменения';
+  }
+});
+document.addEventListener('keydown',function(event){
+  if(event.key==='Escape'&&!document.getElementById('editTaskModal').hidden)closeEditTaskModal();
+});
+
 async function removeTask(id){
   if(!confirm('Удалить задачу?'))return;
   try{

@@ -44,12 +44,35 @@
     }
 
     .username{
-      padding:9px 14px;
-      border-radius:6px;
-      background:#eef2f7;
-      color:#202938;
-      font-weight:bold;
+      padding:9px 14px; border:0; border-radius:6px;
+      background:#eef2f7; color:#202938; font-weight:bold; cursor:pointer;
     }
+    .username{padding:9px 14px;border:0;border-radius:6px;background:#eef2f7;color:#202938;font-weight:bold;cursor:pointer}
+    .account-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(12,20,32,.58);z-index:2000;align-items:center;justify-content:center;padding:20px}
+    .account-modal-backdrop.open{display:flex}
+    .account-modal{width:min(460px,100%);max-height:calc(100vh - 40px);overflow-y:auto;background:#fff;color:#202938;border-radius:16px;padding:28px;box-shadow:0 24px 80px #0005;position:relative;text-align:center}
+    .account-modal-header{display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:22px}
+    .account-modal-header h2{margin:0;font-size:23px}
+    .account-close{position:absolute;right:0;top:0;border:0;background:#eef2f7;color:#344054;border-radius:8px;width:34px;height:34px;font-size:21px;cursor:pointer}
+    .account-profile{padding:12px 8px 18px;margin-bottom:20px;border-bottom:1px solid #e5e8ed}
+    .account-profile-row{padding:8px 0;font-size:15px;overflow-wrap:anywhere}
+    .account-profile-label{display:block;color:#687386;font-size:12px;margin-bottom:3px}
+    .account-actions{display:grid;grid-template-columns:1fr;gap:10px}
+    .account-actions .menu-action{width:100%}
+    .transfer-project{padding:12px;margin:10px 0;background:#f3f6fa;border:1px solid #e1e7ef;border-radius:9px}
+    .transfer-project select{width:100%;max-width:none;margin:8px 0}
+    .account-subview form input{width:100%;max-width:none}
+    .account-modal .menu-action{padding:12px 14px;border:0;border-radius:8px;background:#315b91;color:#fff;cursor:pointer;font-weight:600}
+    .account-modal .delete-action{background:#a83c3c}
+    .account-modal .back-action{background:#eef2f7;color:#344054;margin-bottom:12px}
+    .account-subview{display:none;text-align:left}
+    .account-subview.active{display:block}
+    .account-subview h3{text-align:center;margin:0 0 16px;font-size:18px}
+    .account-modal label{display:block;font-size:13px;font-weight:600;margin:10px 0 5px}
+    .account-modal input{max-width:none;margin:5px 0 14px}
+    .account-message{font-size:13px;margin-top:12px;color:#315b91;text-align:center}
+    .account-message.error{color:#a83c3c}
+    body.modal-open{overflow:hidden}
 
     .logout-btn{
       background:#a83c3c;
@@ -125,9 +148,9 @@
   <a href="/task-form">Создать задачу</a>
 
   <div class="user-panel">
-    <span class="username">
+    <button class="username" id="accountToggle" type="button" aria-haspopup="dialog" aria-expanded="false">
       {{ session.get("username", "") }}
-    </span>
+    </button>
 
     <button class="btn logout-btn" type="button" onclick="logout()">
       Выйти
@@ -135,11 +158,252 @@
   </div>
 </nav>
 
+<div class="account-modal-backdrop" id="accountModalBackdrop" aria-hidden="true">
+  <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+    <div class="account-modal-header">
+      <h2 id="accountModalTitle">Мой аккаунт</h2>
+      <button class="account-close" id="accountClose" type="button" aria-label="Закрыть">×</button>
+    </div>
+    <div id="accountHome">
+      <div class="account-profile">
+        <div class="account-profile-row"><span class="account-profile-label">Логин</span><strong id="accountUsername">Загрузка...</strong></div>
+        <div class="account-profile-row"><span class="account-profile-label">ФИО</span><strong id="accountFullName">—</strong></div>
+        <div class="account-profile-row"><span class="account-profile-label">Электронная почта</span><strong id="accountEmail">—</strong></div>
+      </div>
+      <div class="account-actions">
+        <button class="menu-action" id="showPasswordView" type="button">Сменить пароль</button>
+        <button class="menu-action" id="showDeleteView" type="button">Удалить аккаунт</button>
+        <button class="menu-action" id="showProfileView" type="button">Редактировать профиль</button>
+      </div>
+    </div>
+    <div class="account-subview" id="profileView">
+      <button class="menu-action back-action" type="button" data-account-back>← Назад</button>
+      <h3>Редактирование профиля</h3>
+      <form id="profileForm">
+        <label for="profileUsername">Логин</label>
+        <input id="profileUsername" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_]+">
+        <label for="profileFullName">ФИО (необязательно)</label>
+        <input id="profileFullName" maxlength="100">
+        <label for="profileEmail">Электронная почта</label>
+        <input id="profileEmail" type="email" required maxlength="254">
+        <label for="profileCurrentPassword">Текущий пароль для подтверждения</label>
+        <input id="profileCurrentPassword" type="password" autocomplete="current-password" required>
+        <button class="menu-action" type="submit">Сохранить изменения</button>
+      </form>
+    </div>
+    <div class="account-subview" id="passwordView">
+      <button class="menu-action back-action" type="button" data-account-back>← Назад</button>
+      <h3>Смена пароля</h3>
+      <form id="passwordForm">
+        <label for="currentPassword">Текущий пароль</label>
+        <input id="currentPassword" type="password" autocomplete="current-password" required>
+        <label for="newPassword">Новый пароль</label>
+        <input id="newPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
+        <button class="menu-action" type="submit">Сохранить новый пароль</button>
+      </form>
+    </div>
+    <div class="account-subview" id="deleteView">
+      <button class="menu-action back-action" type="button" data-account-back>← Назад</button>
+      <h3 style="color:#a83c3c">Удаление аккаунта</h3>
+      <p class="muted">Удаление необратимо. Созданные задачи сохранятся, но связь с вашим аккаунтом будет очищена. Перед удалением необходимо передать владение всеми проектами.</p>
+      <div id="ownedProjectsBox"></div>
+      <label for="deletePassword">Введите пароль для подтверждения</label>
+      <input id="deletePassword" type="password" autocomplete="current-password">
+      <button class="menu-action delete-action" id="deleteAccountButton" type="button">Подтвердить удаление</button>
+    </div>
+    <div class="account-message" id="accountMessage" role="status" aria-live="polite"></div>
+  </section>
+</div>
+
 <main>
   {% block content %}{% endblock %}
 </main>
 
 <script>
+const accountToggle = document.getElementById("accountToggle");
+const accountBackdrop = document.getElementById("accountModalBackdrop");
+const accountMessage = document.getElementById("accountMessage");
+const accountHome = document.getElementById("accountHome");
+const passwordView = document.getElementById("passwordView");
+const deleteView = document.getElementById("deleteView");
+const profileView = document.getElementById("profileView");
+
+function showAccountHome() {
+  accountHome.style.display = "block";
+  passwordView.classList.remove("active");
+  deleteView.classList.remove("active");
+  profileView.classList.remove("active");
+  accountMessage.textContent = "";
+  accountMessage.className = "account-message";
+  document.getElementById("passwordForm").reset();
+  document.getElementById("deletePassword").value = "";
+  document.getElementById("profileCurrentPassword").value = "";
+}
+function openAccountModal() {
+  showAccountHome();
+  accountBackdrop.classList.add("open");
+  accountBackdrop.setAttribute("aria-hidden", "false");
+  accountToggle.setAttribute("aria-expanded", "true");
+  document.body.classList.add("modal-open");
+  loadAccountInfo();
+}
+function closeAccountModal() {
+  accountBackdrop.classList.remove("open");
+  accountBackdrop.setAttribute("aria-hidden", "true");
+  accountToggle.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("modal-open");
+}
+function showAccountSubview(view) {
+  accountHome.style.display = "none";
+  passwordView.classList.toggle("active", view === "password");
+  deleteView.classList.toggle("active", view === "delete");
+  profileView.classList.toggle("active", view === "profile");
+  accountMessage.textContent = "";
+  accountMessage.className = "account-message";
+}
+accountToggle?.addEventListener("click", openAccountModal);
+document.getElementById("accountClose")?.addEventListener("click", closeAccountModal);
+document.querySelectorAll("[data-account-back]").forEach(button => button.addEventListener("click", showAccountHome));
+document.getElementById("showPasswordView")?.addEventListener("click", () => showAccountSubview("password"));
+document.getElementById("showDeleteView")?.addEventListener("click", () => { showAccountSubview("delete"); loadDeletionInfo(); });
+document.getElementById("showProfileView")?.addEventListener("click", () => {
+  document.getElementById("profileUsername").value = document.getElementById("accountUsername").textContent;
+  document.getElementById("profileFullName").value = document.getElementById("accountFullName").textContent === "Не указано" ? "" : document.getElementById("accountFullName").textContent;
+  document.getElementById("profileEmail").value = document.getElementById("accountEmail").textContent;
+  showAccountSubview("profile");
+});
+accountBackdrop?.addEventListener("click", event => { if (event.target === accountBackdrop) closeAccountModal(); });
+document.addEventListener("keydown", event => { if (event.key === "Escape" && accountBackdrop?.classList.contains("open")) closeAccountModal(); });
+
+async function loadAccountInfo() {
+  try {
+    const response = await fetch("/users/me");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Не удалось загрузить аккаунт");
+    document.getElementById("accountUsername").textContent = data.username || "—";
+    document.getElementById("accountFullName").textContent = data.full_name || "Не указано";
+    document.getElementById("accountEmail").textContent = data.email || "—";
+  } catch (error) {
+    document.getElementById("accountUsername").textContent = error.message;
+    document.getElementById("accountFullName").textContent = "—";
+    document.getElementById("accountEmail").textContent = "—";
+  }
+}
+
+async function loadDeletionInfo() {
+  const box = document.getElementById("ownedProjectsBox");
+  box.textContent = "Проверяем ваши проекты...";
+  try {
+    const response = await fetch("/users/account-deletion-info");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Не удалось проверить проекты");
+    if (!data.owned_projects.length) {
+      box.innerHTML = '<p class="muted">Вы не владеете проектами. Аккаунт можно удалить после подтверждения пароля.</p>';
+      return;
+    }
+    const users = data.available_users || [];
+    box.innerHTML = '<p><b>Передайте владение проектами:</b></p>' + data.owned_projects.map(project => `
+      <div class="transfer-project">
+        <b>${escapeAccountHtml(project.name)}</b>
+        <label>Новый владелец</label>
+        <select data-transfer-project="${escapeAccountHtml(project._id)}">
+          <option value="">Выберите участника</option>
+          ${users.map(user => `<option value="${escapeAccountHtml(user._id)}">${escapeAccountHtml(user.username)}</option>`).join("")}
+        </select>
+        <button class="menu-action" type="button" onclick="transferOwnedProject('${escapeAccountHtml(project._id)}')">Передать владение</button>
+      </div>`).join("");
+  } catch (error) {
+    box.textContent = error.message;
+  }
+}
+function escapeAccountHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  })[char]);
+}
+async function transferOwnedProject(projectId) {
+  const select = document.querySelector(`[data-transfer-project="${CSS.escape(projectId)}"]`);
+  const newOwnerId = select?.value;
+  if (!newOwnerId) {
+    accountMessage.textContent = "Сначала выберите нового владельца.";
+    accountMessage.className = "account-message error";
+    return;
+  }
+  if (!confirm("Передать владение этим проектом выбранному участнику?")) return;
+  try {
+    const response = await fetch(`/projects/${encodeURIComponent(projectId)}/transfer-owner`, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({new_owner_id: newOwnerId})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Не удалось передать владение");
+    accountMessage.textContent = "Владение проектом передано.";
+    accountMessage.className = "account-message";
+    await loadDeletionInfo();
+  } catch (error) {
+    accountMessage.textContent = error.message;
+    accountMessage.className = "account-message error";
+  }
+}
+
+document.getElementById("profileForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const payload = {
+    username: document.getElementById("profileUsername").value,
+    full_name: document.getElementById("profileFullName").value,
+    email: document.getElementById("profileEmail").value,
+    current_password: document.getElementById("profileCurrentPassword").value
+  };
+  try {
+    const response = await fetch("/users/me", {
+      method: "PATCH", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Не удалось обновить профиль");
+    document.getElementById("accountUsername").textContent = data.username;
+    document.getElementById("accountFullName").textContent = data.full_name || "Не указано";
+    document.getElementById("accountEmail").textContent = data.email;
+    accountToggle.textContent = data.username;
+    accountMessage.textContent = data.message;
+    accountMessage.className = "account-message";
+    document.getElementById("profileCurrentPassword").value = "";
+    showAccountHome();
+  } catch (error) {
+    accountMessage.textContent = error.message;
+    accountMessage.className = "account-message error";
+  }
+});
+
+document.getElementById("passwordForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  accountMessage.className = "account-message";
+  try {
+    const response = await fetch("/users/change-password", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({current_password: document.getElementById("currentPassword").value, new_password: document.getElementById("newPassword").value})
+    });
+    const data = await response.json();
+    accountMessage.textContent = data.message || data.error || "Не удалось изменить пароль";
+    if (!response.ok) accountMessage.classList.add("error"); else event.target.reset();
+  } catch (error) { accountMessage.textContent = "Ошибка соединения с сервером"; accountMessage.classList.add("error"); }
+});
+
+document.getElementById("deleteAccountButton")?.addEventListener("click", async () => {
+  const password = document.getElementById("deletePassword").value;
+  if (!password) { accountMessage.textContent = "Введите пароль для подтверждения."; accountMessage.classList.add("error"); return; }
+  if (!confirm("Вы действительно хотите безвозвратно удалить свой аккаунт? Это действие нельзя отменить.")) return;
+  try {
+    const response = await fetch("/users/delete-account", {
+      method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({password})
+    });
+    const data = await response.json();
+    if (response.ok) { alert(data.message); window.location.href = "/"; return; }
+    accountMessage.textContent = data.error || "Не удалось удалить аккаунт";
+    accountMessage.classList.add("error");
+  } catch (error) { accountMessage.textContent = "Ошибка соединения с сервером"; accountMessage.classList.add("error"); }
+});
+
 async function logout() {
   await fetch("/users/logout", {
     method: "POST"
