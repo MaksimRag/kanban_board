@@ -47,10 +47,7 @@
     <div id="discoverableProjects" class="project-grid"><div class="projects-loading">Поиск проектов...</div></div>
   </section>
 
-  <section class="projects-list-section" id="joinRequestsPanel" hidden>
-    <div class="projects-list-heading"><div><h3>Заявки на вступление</h3><p class="section-hint">Заявки пользователей в ваши проекты.</p></div><button class="btn btn-secondary" type="button" onclick="loadJoinRequests()">Обновить</button></div>
-    <div id="joinRequests" class="join-request-list"><div class="projects-loading">Загрузка заявок...</div></div>
-  </section>
+
 </section>
 
 <div class="modal-backdrop" id="editProjectModal" hidden>
@@ -70,10 +67,6 @@
 .projects-intro h2{font-size:25px;margin:0 0 5px;color:#25344a}
 .projects-intro p,.create-project-heading p{margin:0;color:#718096;font-size:14px}
 .section-hint{margin:4px 0 0;color:#718096;font-size:12px}
-.join-request-list{display:grid;gap:10px}
-.join-request-card{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 15px;background:#f8fafc;border:1px solid #e1e7ef;border-radius:10px}
-.join-request-card p{margin:4px 0 0;color:#718096;font-size:12px}
-.join-request-actions{display:flex;gap:7px;flex-wrap:wrap}
 .projects-count{background:#edf2f8;border:1px solid #dce5ef;color:#53647a;border-radius:20px;padding:7px 12px;font-size:13px}
 .create-project-panel,.projects-list-section{background:#fff;border:1px solid #e5eaf0;border-radius:13px;padding:20px 22px;margin-bottom:18px;box-shadow:0 3px 12px #1d2d4008}
 .create-project-heading h3,.projects-list-heading h3{margin:0 0 5px;font-size:17px;color:#29384d}
@@ -126,10 +119,6 @@ async function loadProjects(){
    </div>
   </article>`).join(''):'<div class="project-empty">Пока нет доступных проектов. Создайте новый или примите приглашение на странице «Участники».</div>';
   await loadDiscoverableProjects();
-  const hasOwned=projectsCache.some(p=>p.can_manage);
-  el('joinRequestsPanel').hidden=!hasOwned;
-  if(hasOwned)await loadJoinRequests();
-  else el('joinRequests').innerHTML='';
  }catch(e){box.innerHTML=`<div class="project-empty">${esc(e.message)}</div>`;el('projectsCount').textContent='Ошибка';}
 }
 function renderDiscoverableProjects(){
@@ -171,20 +160,6 @@ async function requestToJoin(id){
   await loadDiscoverableProjects();
   el('projectMessage').textContent='Заявка отправлена. Дождитесь решения владельца проекта.';
  }catch(e){el('projectMessage').textContent=e.message;}
-}
-async function loadJoinRequests(){
- try{
-  const rows=await api('/projects/join-requests');
-  el('joinRequestsPanel').hidden=!rows.length&&!projectsCache.some(p=>p.can_manage);
-  el('joinRequests').innerHTML=rows.length?rows.map(r=>`<article class="join-request-card">
-   <div><b>${esc(r.full_name||r.username)}</b> <span class="muted">@${esc(r.username)}</span><p>Проект: ${esc(r.project_name)} · ${esc(r.email||'')}</p></div>
-   <div class="join-request-actions"><button class="btn" type="button" onclick="respondJoinRequest('${esc(r._id)}',true)">Принять</button><button class="btn danger" type="button" onclick="respondJoinRequest('${esc(r._id)}',false)">Отклонить</button></div>
-  </article>`).join(''):'<div class="project-empty">Новых заявок пока нет.</div>';
- }catch(e){el('joinRequestsPanel').hidden=true;}
-}
-async function respondJoinRequest(id,accept){
- try{await api(`/projects/join-requests/${encodeURIComponent(id)}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accept})});await loadJoinRequests();await loadProjects();}
- catch(e){el('projectMessage').textContent=e.message;}
 }
 function editProject(id){
  editingProject=projectsCache.find(p=>p._id===id);if(!editingProject)return;

@@ -154,6 +154,10 @@
     .notification-mark{border:0;background:transparent;color:#315b91;cursor:pointer;font-size:12px;padding:5px}
     .notifications-empty{text-align:center;color:#748195;padding:30px 12px;background:#f7f9fc;border:1px dashed #d9e1eb;border-radius:10px}
     body.notifications-open{overflow:hidden}
+    .notification-toast{position:fixed;right:20px;top:20px;z-index:4000;width:min(360px,calc(100vw - 40px));padding:14px 16px;border-radius:11px;background:#24364d;color:#fff;box-shadow:0 12px 35px #0003;opacity:0;transform:translateY(-10px);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+    .notification-toast.show{opacity:1;transform:translateY(0)}
+    .notification-toast strong{display:block;margin-bottom:4px;font-size:14px}
+    .notification-toast span{display:block;font-size:13px;line-height:1.4;color:#e1e8f0}
     @media(max-width:650px){.nav-notifications{width:100%;justify-content:center}.notifications-dialog{padding:17px}.notifications-dialog-head{align-items:flex-start}}
   </style>
 
@@ -457,14 +461,29 @@ const notificationsToggle=document.getElementById("notificationsToggle");
 const notificationsOverlay=document.getElementById("notificationsOverlay");
 const notificationsList=document.getElementById("notificationsList");
 const notificationBadge=document.getElementById("notificationBadge");
+let knownNotificationIds=new Set();
+let notificationsInitialized=false;
+let notificationPollInProgress=false;
+let notificationToastTimer=null;
 
 function notificationEscape(value){
   return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 }
+function notificationRelativeText(date){
+  const seconds=Math.max(0,Math.floor((Date.now()-date.getTime())/1000));
+  if(seconds<10)return "только что";
+  if(seconds<60)return `${seconds} сек. назад`;
+  if(seconds<3600)return `${Math.floor(seconds/60)} мин. назад`;
+  if(seconds<86400)return `${Math.floor(seconds/3600)} ч. назад`;
+  return date.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
 function notificationTimestamp(value){
   if(!value)return "";
+  // API returns an ISO timestamp with Z (UTC); display it in the browser's local timezone.
   const date=new Date(value);
-  return Number.isNaN(date.getTime())?"":date.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  if(Number.isNaN(date.getTime()))return "";
+  const exact=date.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  return `<time datetime="${date.toISOString()}" title="${exact}">${notificationRelativeText(date)}</time>`;
 }
 function notificationMark(type){
   if(type==="join_accepted"||type==="invitation_accepted")return "✓";
@@ -472,30 +491,12 @@ function notificationMark(type){
   if(type==="join_request")return "＋";
   return "•";
 }
-async function refreshNotificationBadge(){
-  if(!notificationBadge)return;
-  try{
-    const response=await fetch("/users/notifications");
-    const data=await response.json();
-    if(!response.ok)throw new Error(data.error||"Ошибка уведомлений");
-    const count=Number(data.unread_count)||0;
-    notificationBadge.textContent=count>99?"99+":String(count);
-    notificationBadge.hidden=count===0;
-    return data;
-  }catch(error){
-    notificationBadge.hidden=true;
-    return null;
-  }
+function notificationId(item){
+  return String(item._id||item.id||`${item.type}:${item.created_at}:${item.title}:${item.message}`);
 }
-async function loadNotifications(){
+function renderNotifications(items){
   if(!notificationsList)return;
-  notificationsList.innerHTML='<div class="notifications-empty">Загрузка уведомлений...</div>';
-  const data=await refreshNotificationBadge();
-  if(!data){
-    notificationsList.innerHTML='<div class="notifications-empty">Не удалось загрузить уведомления.</div>';
-    return;
-  }
-  notificationsList.innerHTML=data.items.length?data.items.map(item=>`
+  notificationsList.innerHTML=items.length?items.map(item=>`
     <article class="notification-row">
       <div class="notification-symbol">${notificationMark(item.type)}</div>
       <div class="notification-body">
@@ -505,6 +506,73 @@ async function loadNotifications(){
       </div>
     </article>`).join(""):'<div class="notifications-empty">У вас пока нет уведомлений.</div>';
 }
+function showNotificationToast(item){
+  let toast=document.getElementById("notificationToast");
+  if(!toast){
+    toast=document.createElement("div");
+    toast.id="notificationToast";
+    toast.className="notification-toast";
+    toast.setAttribute("role","status");
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML=`<strong>${notificationEscape(item.title||"Новое уведомление")}</strong><span>${notificationEscape(item.message||"")}</span>`;
+  toast.classList.add("show");
+  if(notificationToastTimer)clearTimeout(notificationToastTimer);
+  notificationToastTimer=setTimeout(()=>toast.classList.remove("show"),5000);
+}
+async function fetchNotifications(){
+  const response=await fetch("/users/notifications",{cache:"no-store"});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||"Ошибка уведомлений");
+  return data;
+}
+function updateNotificationBadge(data){
+  if(!notificationBadge)return;
+  const count=Number(data.unread_count??(data.items||[]).length)||0;
+  notificationBadge.textContent=count>99?"99+":String(count);
+  notificationBadge.hidden=count===0;
+}
+async function refreshNotificationBadge(){
+  if(!notificationBadge)return null;
+  try{
+    const data=await fetchNotifications();
+    updateNotificationBadge(data);
+    return data;
+  }catch(error){return null;}
+}
+async function pollNotifications(){
+  if(!notificationBadge||notificationPollInProgress||document.hidden)return;
+  notificationPollInProgress=true;
+  try{
+    const data=await fetchNotifications();
+    const items=Array.isArray(data.items)?data.items:[];
+    updateNotificationBadge(data);
+    const newItems=items.filter(item=>!knownNotificationIds.has(notificationId(item)));
+    if(notificationsInitialized){
+      newItems.slice().reverse().forEach(showNotificationToast);
+    }
+    items.forEach(item=>knownNotificationIds.add(notificationId(item)));
+    if(notificationsOverlay?.classList.contains("open"))renderNotifications(items);
+  }catch(error){
+    // Временная ошибка сети не должна мешать следующей фоновой проверке.
+  }finally{
+    notificationPollInProgress=false;
+  }
+}
+async function loadNotifications(){
+  if(!notificationsList)return;
+  notificationsList.innerHTML='<div class="notifications-empty">Загрузка уведомлений...</div>';
+  try{
+    const data=await fetchNotifications();
+    const items=Array.isArray(data.items)?data.items:[];
+    updateNotificationBadge(data);
+    items.forEach(item=>knownNotificationIds.add(notificationId(item)));
+    notificationsInitialized=true;
+    renderNotifications(items);
+  }catch(error){
+    notificationsList.innerHTML='<div class="notifications-empty">Не удалось загрузить уведомления.</div>';
+  }
+}
 async function clearNotifications(){
   if(!notificationsList)return;
   if(!confirm("Удалить все уведомления? Это действие нельзя отменить."))return;
@@ -512,6 +580,7 @@ async function clearNotifications(){
     const response=await fetch("/users/notifications",{method:"DELETE"});
     const data=await response.json();
     if(!response.ok)throw new Error(data.error||"Не удалось очистить уведомления");
+    knownNotificationIds.clear();
     await loadNotifications();
   }catch(error){
     notificationsList.insertAdjacentHTML("afterbegin",`<div class="notifications-empty">${notificationEscape(error.message)}</div>`);
@@ -537,7 +606,27 @@ document.getElementById("closeNotifications")?.addEventListener("click",closeNot
 document.getElementById("clearNotifications")?.addEventListener("click",clearNotifications);
 notificationsOverlay?.addEventListener("click",event=>{if(event.target===notificationsOverlay)closeNotifications();});
 document.addEventListener("keydown",event=>{if(event.key==="Escape")closeNotifications();});
-if(notificationsToggle)refreshNotificationBadge();
+if(notificationsToggle){
+  // Первичная загрузка запоминает уже существующие уведомления без показа старых всплывающих окон.
+  refreshNotificationBadge().then(data=>{
+    if(data&&Array.isArray(data.items)){
+      data.items.forEach(item=>knownNotificationIds.add(notificationId(item)));
+      notificationsInitialized=true;
+      // Сразу после первичной синхронизации выполняем проверку, не ожидая интервала.
+      pollNotifications();
+    }
+  });
+  // Новые уведомления появляются автоматически, без перезагрузки страницы.
+  setInterval(pollNotifications,3000);
+  // Обновляем относительное время в открытом списке, даже если новых уведомлений нет.
+  setInterval(()=>{
+    if(notificationsOverlay?.classList.contains("open")){
+      const times=notificationsList?.querySelectorAll("time[datetime]")||[];
+      times.forEach(node=>{const date=new Date(node.getAttribute("datetime"));if(!Number.isNaN(date.getTime()))node.textContent=notificationRelativeText(date);});
+    }
+  },15000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)pollNotifications();});
+}
 
 async function logout() {
   await fetch("/users/logout", {
