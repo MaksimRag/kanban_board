@@ -1,72 +1,222 @@
 {% extends "base.html" %}
 {% block title %}Проекты — Kanban Board{% endblock %}
 {% block content %}
-<section class="panel">
-  <h2>Создание проекта</h2>
-  <form id="projectForm">
-    <label>Название проекта</label>
-    <input name="name" required>
-    <label>Описание</label>
-    <textarea name="description"></textarea>
-    <p class="muted">Владельцем проекта автоматически станет пользователь, который его создаёт.</p>
-    <button class="btn" type="submit">Создать проект</button>
+<section class="projects-page">
+  <header class="projects-intro">
+    <div><h2>Проекты</h2><p>Рабочие пространства и команды, к которым у вас есть доступ.</p></div>
+    <span class="projects-count" id="projectsCount">Загрузка...</span>
+  </header>
+
+  <section class="create-project-panel">
+    <div class="create-project-heading"><div><h3>Новый проект</h3><p>Создайте рабочее пространство и пригласите участников.</p></div></div>
+    <form id="projectForm" class="create-project-form">
+      <input name="name" placeholder="Название проекта" aria-label="Название проекта" required maxlength="120">
+      <input name="description" placeholder="Краткое описание (необязательно)" aria-label="Описание проекта">
+      <button class="btn" type="submit">＋ Создать проект</button>
+    </form>
+    <p id="projectMessage" class="project-message" role="status"></p>
+  </section>
+
+  <section class="projects-list-section">
+    <div class="projects-list-heading"><h3>Мои проекты</h3><button class="btn btn-secondary" type="button" onclick="loadProjects()">Обновить</button></div>
+    <div id="projects" class="project-grid"><div class="projects-loading">Загрузка проектов...</div></div>
+  </section>
+
+  <section class="projects-list-section">
+    <div class="projects-list-heading">
+      <div><h3>Найти проект</h3><p class="section-hint">Найдите проект по названию, описанию или владельцу и отправьте заявку на вступление.</p></div>
+      <button class="btn btn-secondary" type="button" onclick="loadDiscoverableProjects()">Обновить</button>
+    </div>
+    <div class="discoverable-toolbar">
+      <div class="discoverable-search-wrap">
+        <label for="discoverableSearch">Поиск проектов</label>
+        <input id="discoverableSearch" type="search" placeholder="Название, описание или владелец..." autocomplete="off">
+      </div>
+      <div class="discoverable-sort-wrap">
+        <label for="discoverableSort">Сортировка</label>
+        <select id="discoverableSort">
+          <option value="name_asc">По названию А–Я</option>
+          <option value="name_desc">По названию Я–А</option>
+          <option value="members_desc">Сначала больше участников</option>
+          <option value="members_asc">Сначала меньше участников</option>
+          <option value="owner_asc">По владельцу А–Я</option>
+        </select>
+      </div>
+      <span class="discoverable-result-count" id="discoverableResultCount">Найдено: 0</span>
+    </div>
+    <div id="discoverableProjects" class="project-grid"><div class="projects-loading">Поиск проектов...</div></div>
+  </section>
+
+  <section class="projects-list-section" id="joinRequestsPanel" hidden>
+    <div class="projects-list-heading"><div><h3>Заявки на вступление</h3><p class="section-hint">Заявки пользователей в ваши проекты.</p></div><button class="btn btn-secondary" type="button" onclick="loadJoinRequests()">Обновить</button></div>
+    <div id="joinRequests" class="join-request-list"><div class="projects-loading">Загрузка заявок...</div></div>
+  </section>
+</section>
+
+<div class="modal-backdrop" id="editProjectModal" hidden>
+ <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editProjectTitle">
+  <div class="modal-heading"><h3 id="editProjectTitle">Редактировать проект</h3><button class="icon-close" type="button" onclick="closeEditProject()">×</button></div>
+  <form id="editProjectForm">
+   <label for="editProjectName">Название</label><input id="editProjectName" name="name" required maxlength="120">
+   <label for="editProjectDescription">Описание</label><textarea id="editProjectDescription" name="description" rows="3"></textarea>
+   <div class="modal-actions"><button class="btn btn-secondary" type="button" onclick="closeEditProject()">Отмена</button><button class="btn" type="submit">Сохранить</button></div>
   </form>
-  <p id="message" class="muted"></p>
-</section>
-<section class="panel">
-  <h2>Список проектов</h2>
-  <div id="projects">Загрузка...</div>
-</section>
+ </section>
+</div>
+
+<style>
+.projects-page{max-width:1120px;margin:0 auto;padding:8px 0 28px}
+.projects-intro{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:8px 0 22px}
+.projects-intro h2{font-size:25px;margin:0 0 5px;color:#25344a}
+.projects-intro p,.create-project-heading p{margin:0;color:#718096;font-size:14px}
+.section-hint{margin:4px 0 0;color:#718096;font-size:12px}
+.join-request-list{display:grid;gap:10px}
+.join-request-card{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 15px;background:#f8fafc;border:1px solid #e1e7ef;border-radius:10px}
+.join-request-card p{margin:4px 0 0;color:#718096;font-size:12px}
+.join-request-actions{display:flex;gap:7px;flex-wrap:wrap}
+.projects-count{background:#edf2f8;border:1px solid #dce5ef;color:#53647a;border-radius:20px;padding:7px 12px;font-size:13px}
+.create-project-panel,.projects-list-section{background:#fff;border:1px solid #e5eaf0;border-radius:13px;padding:20px 22px;margin-bottom:18px;box-shadow:0 3px 12px #1d2d4008}
+.create-project-heading h3,.projects-list-heading h3{margin:0 0 5px;font-size:17px;color:#29384d}
+.create-project-form{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(220px,1.4fr) auto;gap:10px;margin-top:16px;align-items:center}
+.create-project-form input{width:100%;max-width:none;margin:0;min-width:0}
+.project-message{font-size:13px;color:#52657e;margin:8px 0 0}
+.projects-list-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
+.project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.discoverable-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) minmax(190px,260px) auto;align-items:end;gap:12px;margin:14px 0 16px;padding:13px;background:#f7f9fc;border:1px solid #e5ebf2;border-radius:10px}
+.discoverable-toolbar label{display:block;font-size:12px;font-weight:600;color:#536176;margin-bottom:6px}
+.discoverable-toolbar input,.discoverable-toolbar select{width:100%;max-width:none;margin:0;min-width:0}
+.discoverable-result-count{font-size:12px;color:#718096;padding:10px 2px;white-space:nowrap}
+.project-card{border:1px solid #e1e7ef;background:#fbfcfe;border-radius:11px;padding:17px;min-width:0}
+.project-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.project-card h4{font-size:17px;color:#26364c;margin:0 0 7px;overflow-wrap:anywhere}
+.project-role{font-size:11px;font-weight:600;color:#526b8b;background:#eaf0f7;border-radius:20px;padding:5px 9px;white-space:nowrap}
+.project-description{font-size:13px;line-height:1.5;color:#68778b;min-height:38px;margin:3px 0 13px;overflow-wrap:anywhere}
+.project-owner{font-size:12px;color:#738196;border-top:1px solid #e8edf3;padding-top:11px}
+.project-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.project-card-actions .btn{font-size:12px;padding:8px 11px}
+.project-empty,.projects-loading{grid-column:1/-1;color:#718096;text-align:center;padding:28px 12px;background:#f8fafc;border:1px dashed #d7e0ea;border-radius:10px}
+.modal-backdrop[hidden]{display:none}.modal-backdrop{position:fixed;inset:0;z-index:3000;background:#101b2c99;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-dialog{background:#fff;width:min(500px,100%);border-radius:14px;padding:23px;box-shadow:0 20px 60px #0004}
+.modal-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.modal-heading h3{margin:0}
+.icon-close{border:0;background:#edf1f6;border-radius:8px;width:34px;height:34px;font-size:22px;cursor:pointer}
+.modal-dialog label{display:block;margin:12px 0 6px;font-size:13px;font-weight:600;color:#536176}
+.modal-dialog input,.modal-dialog textarea{width:100%;max-width:none}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+@media(max-width:720px){.create-project-form{grid-template-columns:1fr}.project-grid{grid-template-columns:1fr}.projects-intro{align-items:flex-start}.discoverable-toolbar{grid-template-columns:1fr}.discoverable-result-count{padding:0}}
+</style>
+
 <script>
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-  })[char]);
+const el=id=>document.getElementById(id);
+let projectsCache=[],discoverableCache=[],editingProject=null;
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function api(url,options={}){const r=await fetch(url,options);let d={};try{d=await r.json()}catch(_){}if(!r.ok)throw new Error(d.error||'Ошибка запроса');return d;}
+async function loadProjects(){
+ const box=el('projects');box.innerHTML='<div class="projects-loading">Загрузка проектов...</div>';
+ try{
+  projectsCache=await api('/projects/');
+  el('projectsCount').textContent=`${projectsCache.length} ${projectsCache.length===1?'проект':projectsCache.length>1&&projectsCache.length<5?'проекта':'проектов'}`;
+  box.innerHTML=projectsCache.length?projectsCache.map(p=>`<article class="project-card">
+   <div class="project-card-top"><h4>${esc(p.name)}</h4><span class="project-role">${p.can_manage?'Владелец':'Участник'}</span></div>
+   <p class="project-description">${esc(p.description||'Описание не добавлено.')}</p>
+   <div class="project-owner">Владелец проекта · <b>${esc(p.owner_username||'—')}</b></div>
+   <div class="project-card-actions">
+    <a class="btn" href="/tasks-page?project_id=${encodeURIComponent(p._id)}">Открыть задачи</a>
+    <a class="btn btn-secondary" href="/users-page?project_id=${encodeURIComponent(p._id)}">Участники</a>
+    ${p.can_manage?`<button class="btn btn-secondary" type="button" onclick="editProject('${esc(p._id)}')">Изменить</button><button class="btn danger" type="button" onclick="deleteProject('${esc(p._id)}')">Удалить</button>`:`<button class="btn btn-secondary" type="button" onclick="leaveProject('${esc(p._id)}')">Покинуть</button>`}
+   </div>
+  </article>`).join(''):'<div class="project-empty">Пока нет доступных проектов. Создайте новый или примите приглашение на странице «Участники».</div>';
+  await loadDiscoverableProjects();
+  const hasOwned=projectsCache.some(p=>p.can_manage);
+  el('joinRequestsPanel').hidden=!hasOwned;
+  if(hasOwned)await loadJoinRequests();
+  else el('joinRequests').innerHTML='';
+ }catch(e){box.innerHTML=`<div class="project-empty">${esc(e.message)}</div>`;el('projectsCount').textContent='Ошибка';}
 }
-async function loadProjects() {
-  const response = await fetch('/projects/');
-  if (!response.ok) throw new Error('Не удалось загрузить проекты');
-  const projects = await response.json();
-  document.getElementById('projects').innerHTML = projects.length
-    ? projects.map(project => `<div class="status">
-        <b>${escapeHtml(project.name)}</b>
-        <p>${escapeHtml(project.description || '')}</p>
-        <small>Владелец: ${escapeHtml(project.owner_username || 'Неизвестный пользователь')}</small>
-        ${project.can_manage
-          ? `<p><button class="btn danger" onclick="removeProject('${escapeHtml(project._id)}')">Удалить проект</button></p>`
-          : `<small class="muted">Управлять проектом может только его создатель.</small>`}
-      </div>`).join('')
-    : 'Проектов пока нет.';
+function renderDiscoverableProjects(){
+ const box=el('discoverableProjects');
+ const query=(el('discoverableSearch')?.value||'').trim().toLocaleLowerCase('ru-RU');
+ const sort=el('discoverableSort')?.value||'name_asc';
+ const rows=discoverableCache.filter(p=>{
+   const haystack=[p.name,p.description,p.owner_username].join(' ').toLocaleLowerCase('ru-RU');
+   return !query||haystack.includes(query);
+ });
+ rows.sort((a,b)=>{
+   const nameA=String(a.name||'').localeCompare(String(b.name||''),'ru');
+   const ownerA=String(a.owner_username||'').localeCompare(String(b.owner_username||''),'ru');
+   const membersA=(Number(a.member_count)||0)-(Number(b.member_count)||0);
+   if(sort==='name_desc')return -nameA;
+   if(sort==='members_desc')return -membersA||nameA;
+   if(sort==='members_asc')return membersA||nameA;
+   if(sort==='owner_asc')return ownerA||nameA;
+   return nameA;
+ });
+ el('discoverableResultCount').textContent=`Найдено: ${rows.length} из ${discoverableCache.length}`;
+ box.innerHTML=rows.length?rows.map(p=>`<article class="project-card">
+   <div class="project-card-top"><h4>${esc(p.name)}</h4><span class="project-role">Открыт для заявок</span></div>
+   <p class="project-description">${esc(p.description||'Описание не добавлено.')}</p>
+   <div class="project-owner">Владелец · <b>${esc(p.owner_username||'—')}</b> &nbsp;·&nbsp; Участников · <b>${Number(p.member_count)||0}</b></div>
+   <div class="project-card-actions"><button class="btn" type="button" onclick="requestToJoin('${esc(p._id)}')">Подать заявку</button></div>
+  </article>`).join(''):'<div class="project-empty">'+(query?'По вашему запросу ничего не найдено. Попробуйте изменить поисковую фразу или сортировку.':'Сейчас нет проектов, открытых для вступления.')+'</div>';
 }
-document.getElementById('projectForm').addEventListener('submit', async event => {
-  event.preventDefault();
-  const data = Object.fromEntries(new FormData(event.target));
-  const message = document.getElementById('message');
-  try {
-    const response = await fetch('/projects/', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(data)
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Не удалось создать проект');
-    message.textContent = 'Проект создан. Вы являетесь его владельцем.';
-    event.target.reset();
-    await loadProjects();
-  } catch (error) { message.textContent = error.message; }
+async function loadDiscoverableProjects(){
+ const box=el('discoverableProjects');box.innerHTML='<div class="projects-loading">Поиск проектов...</div>';
+ try{
+  discoverableCache=await api('/projects/discoverable');
+  renderDiscoverableProjects();
+ }catch(e){box.innerHTML=`<div class="project-empty">${esc(e.message)}</div>`;el('discoverableResultCount').textContent='Не удалось загрузить';}
+}
+async function requestToJoin(id){
+ try{
+  await api(`/projects/${encodeURIComponent(id)}/join-requests`,{method:'POST'});
+  await loadDiscoverableProjects();
+  el('projectMessage').textContent='Заявка отправлена. Дождитесь решения владельца проекта.';
+ }catch(e){el('projectMessage').textContent=e.message;}
+}
+async function loadJoinRequests(){
+ try{
+  const rows=await api('/projects/join-requests');
+  el('joinRequestsPanel').hidden=!rows.length&&!projectsCache.some(p=>p.can_manage);
+  el('joinRequests').innerHTML=rows.length?rows.map(r=>`<article class="join-request-card">
+   <div><b>${esc(r.full_name||r.username)}</b> <span class="muted">@${esc(r.username)}</span><p>Проект: ${esc(r.project_name)} · ${esc(r.email||'')}</p></div>
+   <div class="join-request-actions"><button class="btn" type="button" onclick="respondJoinRequest('${esc(r._id)}',true)">Принять</button><button class="btn danger" type="button" onclick="respondJoinRequest('${esc(r._id)}',false)">Отклонить</button></div>
+  </article>`).join(''):'<div class="project-empty">Новых заявок пока нет.</div>';
+ }catch(e){el('joinRequestsPanel').hidden=true;}
+}
+async function respondJoinRequest(id,accept){
+ try{await api(`/projects/join-requests/${encodeURIComponent(id)}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accept})});await loadJoinRequests();await loadProjects();}
+ catch(e){el('projectMessage').textContent=e.message;}
+}
+function editProject(id){
+ editingProject=projectsCache.find(p=>p._id===id);if(!editingProject)return;
+ el('editProjectName').value=editingProject.name||'';el('editProjectDescription').value=editingProject.description||'';
+ el('editProjectModal').hidden=false;
+}
+function closeEditProject(){el('editProjectModal').hidden=true;editingProject=null;}
+el('editProjectForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!editingProject)return;
+ const data={name:el('editProjectName').value.trim(),description:el('editProjectDescription').value};
+ try{await api(`/projects/${encodeURIComponent(editingProject._id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});closeEditProject();el('projectMessage').textContent='Изменения сохранены.';await loadProjects();}
+ catch(err){el('projectMessage').textContent=err.message;}
 });
-async function removeProject(id) {
-  if (!confirm('Удалить проект и связанные с ним задачи?')) return;
-  try {
-    const response = await fetch('/projects/' + encodeURIComponent(id), {method: 'DELETE'});
-    if (!response.ok) {
-      const result = await response.json();
-      throw new Error(result.error || 'Не удалось удалить проект');
-    }
-    await loadProjects();
-  } catch (error) { alert(error.message); }
+async function deleteProject(id){
+ if(!confirm('Удалить проект вместе со всеми задачами? Это действие необратимо.'))return;
+ try{await api(`/projects/${encodeURIComponent(id)}`,{method:'DELETE'});await loadProjects();}
+ catch(e){el('projectMessage').textContent=e.message;}
 }
-loadProjects().catch(error => {
-  document.getElementById('projects').textContent = error.message;
+async function leaveProject(id){
+ if(!confirm('Покинуть проект? Доступ к его задачам будет закрыт.'))return;
+ try{await api(`/projects/${encodeURIComponent(id)}/leave`,{method:'POST'});await loadProjects();}
+ catch(e){el('projectMessage').textContent=e.message;}
+}
+el('projectForm').addEventListener('submit',async e=>{
+ e.preventDefault();const data=Object.fromEntries(new FormData(e.target));data.name=(data.name||'').trim();
+ try{await api('/projects/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});el('projectMessage').textContent='Проект создан. Вы назначены его владельцем.';e.target.reset();await loadProjects();}
+ catch(err){el('projectMessage').textContent=err.message;}
 });
+el('editProjectModal').addEventListener('click',e=>{if(e.target===el('editProjectModal'))closeEditProject();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeEditProject();});
+el('discoverableSearch')?.addEventListener('input',renderDiscoverableProjects);
+el('discoverableSort')?.addEventListener('change',renderDiscoverableProjects);
+loadProjects();
 </script>
 {% endblock %}

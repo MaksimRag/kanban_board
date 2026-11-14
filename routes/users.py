@@ -31,6 +31,27 @@ def _public_user(user):
     return {key: value for key, value in user.items() if key != "password_hash"}
 
 
+@users_bp.route("/notifications", methods=["GET"])
+def get_notifications():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Необходимо войти в систему"}), 401
+    items = db.list_notifications(user_id)
+    return jsonify({
+        "items": items,
+        "unread_count": len(items)
+    })
+
+
+@users_bp.route("/notifications", methods=["DELETE"])
+def clear_notifications():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Необходимо войти в систему"}), 401
+    deleted = db.delete_all_notifications(user_id)
+    return jsonify({"message": "Уведомления очищены", "deleted": deleted})
+
+
 @users_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json(silent=True) or {}
@@ -129,7 +150,13 @@ def logout():
 
 @users_bp.route("/", methods=["GET"])
 def list_users():
-    return jsonify([_public_user(user) for user in db.list_users()])
+    # Не раскрываем общий каталог пользователей: возвращаем только команду
+    # проектов, доступных текущему пользователю.
+    visible = {}
+    for project in db.list_accessible_projects(session.get("user_id")):
+        for member in db.list_project_members(project["_id"]):
+            visible[member["_id"]] = member
+    return jsonify(list(visible.values()))
 
 
 @users_bp.route("/me", methods=["GET"])
@@ -210,17 +237,14 @@ def account_deletion_info():
         return jsonify({"error": "Необходимо войти в аккаунт"}), 401
 
     owned = db.list_projects(owner_id=user_id)
-    users = [
-        {"_id": item["_id"], "username": item.get("username", "")}
-        for item in db.list_users() if item.get("_id") != user_id
-    ]
-    return jsonify({
-        "owned_projects": [
-            {"_id": item["_id"], "name": item.get("name", "")}
-            for item in owned
-        ],
-        "available_users": users,
-    }), 200
+    projects = []
+    for item in owned:
+        candidates = [member for member in db.list_project_members(item["_id"]) if member.get("role") != "owner"]
+        projects.append({
+            "_id": item["_id"], "name": item.get("name", ""),
+            "available_users": [{"_id": member["_id"], "username": member["username"]} for member in candidates]
+        })
+    return jsonify({"owned_projects": projects}), 200
 
 
 @users_bp.route("/change-password", methods=["POST"])
@@ -301,42 +325,26 @@ def get_user(user_id):
     user = db.get_user_by_id(user_id)
     if user is None:
         return jsonify({"error": "Пользователь не найден"}), 404
+    if user_id != session.get("user_id"):
+        shared = any(
+            any(member.get("_id") == user_id for member in db.list_project_members(project["_id"]))
+            for project in db.list_accessible_projects(session.get("user_id"))
+        )
+        if not shared:
+            return jsonify({"error": "Нет доступа к данным этого пользователя"}), 403
     return jsonify(_public_user(user))
 
 
 @users_bp.route("/", methods=["POST"])
 def create_user():
-    data = request.get_json(silent=True) or {}
-    username = data.get("username")
-    email = data.get("email")
-    if not isinstance(username, str) or not username.strip():
-        return jsonify({"error": "Укажите логин"}), 400
-    if not isinstance(email, str) or not email.strip():
-        return jsonify({"error": "Укажите Email"}), 400
-    try:
-        user = db.create_user(username.strip(), email.strip().lower(), "", data.get("full_name"))
-    except DuplicateKeyError:
-        return jsonify({"error": "Пользователь с таким логином или email уже существует"}), 409
-    return jsonify(_public_user(user)), 201
+    return jsonify({"error": "Создание аккаунтов доступно только через регистрацию. Чтобы добавить человека в проект, отправьте ему приглашение."}), 405
 
 
 @users_bp.route("/<user_id>", methods=["PATCH", "PUT"])
 def update_user(user_id):
-    data = request.get_json(silent=True) or {}
-    data.pop("password_hash", None)
-    try:
-        user = db.update_user(user_id, **data)
-    except DuplicateKeyError:
-        return jsonify({"error": "Логин или email уже используется"}), 409
-    if user is None:
-        return jsonify({"error": "Пользователь не найден или указан неверный ID"}), 404
-    return jsonify(_public_user(user))
+    return jsonify({"error": "Редактировать личные данные можно только в настройках собственного аккаунта."}), 403
 
 
 @users_bp.route("/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
-    if session.get("user_id") == user_id:
-        return jsonify({"error": "Нельзя удалить текущую учётную запись"}), 400
-    if not db.delete_user(user_id):
-        return jsonify({"error": "Пользователь не найден или указан неверный ID"}), 404
-    return "", 204
+    return jsonify({"error": "Удаление аккаунта доступно только владельцу аккаунта через настройки профиля."}), 403

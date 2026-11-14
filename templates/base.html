@@ -369,6 +369,10 @@ document.getElementById("profileForm")?.addEventListener("submit", async event =
     accountMessage.className = "account-message";
     document.getElementById("profileCurrentPassword").value = "";
     showAccountHome();
+
+    // Обновляем текущую страницу, чтобы задачи, проекты и список участников
+    // повторно загрузили актуальные данные профиля с сервера.
+    window.location.reload();
   } catch (error) {
     accountMessage.textContent = error.message;
     accountMessage.className = "account-message error";

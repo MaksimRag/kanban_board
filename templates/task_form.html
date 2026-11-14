@@ -4,33 +4,36 @@
 <section class="panel">
  <h2>Создание задачи</h2>
  <form id="taskForm">
-  <label>Название задачи</label><input name="title" required>
+  <label>Название задачи</label><input name="title" maxlength="200" required>
   <label>Описание</label><textarea name="description"></textarea>
   <label>Проект</label><select name="project_id" id="project" required></select>
-  <label>Участник</label><select name="assignee_id" id="assignee"><option value="">Не назначен</option></select>
+  <label>Исполнитель</label><select name="assignee_id" id="assignee"><option value="">Не назначен</option></select>
   <label>Статус</label><select name="status"><option value="TODO">Новая</option><option value="IN_PROGRESS">В работе</option><option value="DONE">Выполнена</option></select>
   <button class="btn" type="submit">Сохранить задачу</button>
-  <a class="btn" href="/tasks-page">К списку задач</a>
- </form>
- <p id="message" class="muted"></p>
+  <a class="btn btn-secondary" href="/tasks-page">К списку задач</a>
+ </form><p id="message" class="muted" role="status"></p>
 </section>
 <script>
-async function initForm(){
- const [pr,ur]=await Promise.all([fetch('/projects/'),fetch('/users/')]);
- const projects=await pr.json(),users=await ur.json();
- document.getElementById('project').innerHTML=projects.map(p=>`<option value="${p._id}">${p.name}</option>`).join('');
- document.getElementById('assignee').innerHTML='<option value="">Не назначен</option>'+users.map(u=>`<option value="${u._id}" data-username="${u.username}">${u.username}</option>`).join('');
+const formEl=document.getElementById('taskForm'),projectEl=document.getElementById('project'),assigneeEl=document.getElementById('assignee');
+async function api(url){const r=await fetch(url);const d=await r.json();if(!r.ok)throw new Error(d.error||'Ошибка загрузки');return d;}
+async function loadAssignees(){
+ const projectId=projectEl.value;assigneeEl.innerHTML='';if(!projectId)return;
+ const data=await api(`/projects/${encodeURIComponent(projectId)}/members`);
+ assigneeEl.innerHTML+='<option value="">Не назначен</option>'+data.members.map(m=>`<option value="${m._id}">${m.full_name||m.username} (@${m.username})</option>`).join('');
 }
-document.getElementById('taskForm').addEventListener('submit',async e=>{
- e.preventDefault();const data=Object.fromEntries(new FormData(e.target));if(!data.assignee_id)data.assignee_id=null;
- const r=await fetch('/tasks/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
- const d=await r.json();
- const selectedAssignee=document.getElementById('assignee');
- const assigneeName=selectedAssignee.selectedOptions[0]?.dataset.username || 'Не назначен';
- document.getElementById('message').textContent=r.ok
-   ? 'Задача создана. Участник: '+assigneeName
-   : (d.error||'Ошибка');
- if(r.ok)e.target.reset();
+async function initForm(){
+ const projects=await api('/projects/');
+ projectEl.innerHTML=projects.map(p=>`<option value="${p._id}">${p.name}</option>`).join('');
+ if(!projects.length){projectEl.innerHTML='<option value="">Сначала создайте проект или примите приглашение</option>';return;}
+ const requested=new URLSearchParams(location.search).get('project_id');if(requested&&projects.some(p=>p._id===requested))projectEl.value=requested;
+ await loadAssignees();
+}
+projectEl.addEventListener('change',()=>loadAssignees().catch(e=>document.getElementById('message').textContent=e.message));
+formEl.addEventListener('submit',async e=>{
+ e.preventDefault();const data=Object.fromEntries(new FormData(formEl));if(!data.assignee_id)data.assignee_id=null;
+ try{const r=await fetch('/tasks/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Ошибка создания');
+ document.getElementById('message').textContent='Задача создана.';formEl.reset();await initForm();}
+ catch(err){document.getElementById('message').textContent=err.message;}
 });
 initForm().catch(e=>document.getElementById('message').textContent='Ошибка загрузки данных: '+e.message);
 </script>
