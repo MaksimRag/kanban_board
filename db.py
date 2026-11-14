@@ -105,7 +105,7 @@ def init_collections():
     db = get_db()
 
     # Явное создание коллекций (если не существуют)
-    for name in ["users", "projects", "tasks", "project_memberships", "project_invitations", "project_join_requests", "notifications"]:
+    for name in ["users", "projects", "tasks", "project_memberships", "project_invitations", "project_join_requests", "project_invite_requests", "notifications"]:
         try:
             db.create_collection(name)
             print(f"📁 Коллекция '{name}' создана")
@@ -122,6 +122,7 @@ def init_collections():
     db.project_invitations.create_index([("invitee_id", 1), ("status", 1)])
     db.project_join_requests.create_index([("project_id", 1), ("user_id", 1), ("status", 1)])
     db.project_join_requests.create_index([("user_id", 1), ("status", 1)])
+    db.project_invite_requests.create_index([("project_id", 1), ("status", 1), ("created_at", -1)])
     db.notifications.create_index([("user_id", 1), ("created_at", -1)])
     db.notifications.create_index([("user_id", 1), ("is_read", 1)])
     db.tasks.create_index("project_id")
@@ -233,6 +234,7 @@ def delete_user(user_id):
     database = get_db()
     database.project_memberships.delete_many({"user_id": oid})
     database.project_invitations.delete_many({"$or": [{"invitee_id": oid}, {"inviter_id": oid}]})
+    database.project_invite_requests.delete_many({"$or": [{"invitee_id": oid}, {"requester_id": oid}]})
     database.tasks.update_many({"assignee_id": oid}, {"$set": {"assignee_id": None, "assignee_unassigned": True}})
     database.tasks.update_many({"created_by_id": oid}, {"$set": {"created_by_id": None, "created_by_deleted": True}})
     result = database.users.delete_one({"_id": oid})
@@ -333,6 +335,7 @@ def delete_project(project_id):
     # Удаляем членство и приглашения, связанные с проектом
     db.project_memberships.delete_many({"project_id": oid})
     db.project_invitations.delete_many({"project_id": oid})
+    db.project_invite_requests.delete_many({"project_id": oid})
     # Затем сам проект
     result = db.projects.delete_one({"_id": oid})
     return result.deleted_count == 1
@@ -502,6 +505,94 @@ def list_project_members(project_id):
     return result
 
 
+def create_project_invite_request(project_id, requester_id, invitee_id):
+    p_oid, requester_oid, invitee_oid = map(_parse_id, (project_id, requester_id, invitee_id))
+    if not all((p_oid, requester_oid, invitee_oid)) or requester_oid == invitee_oid:
+        return None, "Некорректные данные запроса"
+    database = get_db()
+    project = database.projects.find_one({"_id": p_oid})
+    if not project:
+        return None, "Проект не найден"
+    if not is_project_member(project_id, requester_id):
+        return None, "Только участник проекта может предложить приглашение"
+    if database.users.find_one({"_id": invitee_oid}) is None:
+        return None, "Пользователь не найден"
+    if is_project_member(project_id, invitee_id):
+        return None, "Пользователь уже состоит в проекте"
+    pending_invite = database.project_invitations.find_one({"project_id": p_oid, "invitee_id": invitee_oid, "status": "pending"})
+    if pending_invite:
+        return None, "Этому пользователю уже отправлено приглашение"
+    pending_request = database.project_invite_requests.find_one({"project_id": p_oid, "invitee_id": invitee_oid, "status": "pending"})
+    if pending_request:
+        return None, "Запрос на приглашение этого пользователя уже отправлен"
+    doc = {"project_id": p_oid, "requester_id": requester_oid, "invitee_id": invitee_oid,
+           "status": "pending", "created_at": datetime.utcnow()}
+    result = database.project_invite_requests.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    requester = get_user_by_id(requester_id)
+    create_notification(project.get("owner_id"), "project_invite_request", "Запрос на приглашение участника",
+        f"@{(requester or {}).get('username', 'участник')} предлагает пригласить пользователя в проект «{project.get('name', '')}». Требуется ваше решение.", project_id)
+    return _project_invite_request_to_dict(doc), None
+
+
+def _project_invite_request_to_dict(doc):
+    if not doc:
+        return None
+    for key in ("_id", "project_id", "requester_id", "invitee_id"):
+        if doc.get(key) is not None:
+            doc[key] = str(doc[key])
+    return doc
+
+
+def list_project_invite_requests(project_id, status="pending"):
+    project_oid = _parse_id(project_id)
+    if project_oid is None:
+        return []
+    rows = get_db().project_invite_requests.find({"project_id": project_oid, "status": status}).sort("created_at", -1)
+    result = []
+    for row in rows:
+        item = _project_invite_request_to_dict(row)
+        project = get_project_by_id(item["project_id"])
+        requester = get_user_by_id(item["requester_id"])
+        invitee = get_user_by_id(item["invitee_id"])
+        item["project_name"] = project.get("name") if project else "Проект удалён"
+        item["requester_username"] = requester.get("username") if requester else "Удалённый пользователь"
+        item["requester_full_name"] = requester.get("full_name") or "" if requester else ""
+        item["invitee_username"] = invitee.get("username") if invitee else "Удалённый пользователь"
+        item["invitee_full_name"] = invitee.get("full_name") or "" if invitee else ""
+        item["invitee_email"] = invitee.get("email") or "" if invitee else ""
+        result.append(item)
+    return result
+
+
+def respond_project_invite_request(request_id, owner_id, accept):
+    request_oid, owner_oid = _parse_id(request_id), _parse_id(owner_id)
+    if request_oid is None or owner_oid is None:
+        return None, "Запрос не найден"
+    database = get_db()
+    row = database.project_invite_requests.find_one({"_id": request_oid, "status": "pending"})
+    if not row:
+        return None, "Запрос не найден или уже обработан"
+    project = database.projects.find_one({"_id": row["project_id"], "owner_id": owner_oid})
+    if not project:
+        return None, "Решение по запросу может принять только владелец проекта"
+    new_status = "approved" if accept else "rejected"
+    database.project_invite_requests.update_one({"_id": request_oid, "status": "pending"},
+        {"$set": {"status": new_status, "responded_at": datetime.utcnow()}})
+    requester = get_user_by_id(row["requester_id"])
+    invitee = get_user_by_id(row["invitee_id"])
+    if accept:
+        invitation, error = add_project_invitation(str(row["project_id"]), owner_id, str(row["invitee_id"]))
+        if error:
+            database.project_invite_requests.update_one({"_id": request_oid}, {"$set": {"status": "failed", "error": error}})
+            create_notification(row["requester_id"], "project_invite_request_failed", "Не удалось отправить приглашение", error, row["project_id"])
+            return None, error
+    create_notification(row["requester_id"], "project_invite_request_approved" if accept else "project_invite_request_rejected",
+        "Запрос одобрен" if accept else "Запрос отклонён",
+        f"Владелец {'одобрил' if accept else 'отклонил'} предложение пригласить @{(invitee or {}).get('username', 'пользователя')} в проект «{project.get('name', '')}»." , row["project_id"])
+    return _project_invite_request_to_dict(database.project_invite_requests.find_one({"_id": request_oid})), None
+
+
 def add_project_invitation(project_id, inviter_id, invitee_id):
     p_oid, from_oid, to_oid = map(_parse_id, (project_id, inviter_id, invitee_id))
     if not all((p_oid, from_oid, to_oid)) or from_oid == to_oid:
@@ -656,7 +747,10 @@ def list_project_invite_candidates(project_id):
     pending = {row["invitee_id"] for row in get_db().project_invitations.find(
         {"project_id": project_oid, "status": "pending"}, {"invitee_id": 1}
     )}
-    excluded = list(existing | pending)
+    pending_requests = {row["invitee_id"] for row in get_db().project_invite_requests.find(
+        {"project_id": project_oid, "status": "pending"}, {"invitee_id": 1}
+    )}
+    excluded = list(existing | pending | pending_requests)
     users = get_db().users.find({"_id": {"$nin": excluded}})
     return [{"_id": str(u["_id"]), "username": u.get("username", ""),
              "full_name": u.get("full_name") or ""} for u in users]

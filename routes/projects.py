@@ -121,13 +121,53 @@ def project_members(project_id):
     })
 
 
+@projects_bp.route("/<project_id>/invite-requests", methods=["GET"])
+def list_invite_requests(project_id):
+    project = db.get_project_by_id(project_id)
+    if not project:
+        return jsonify({"error": "Проект не найден"}), 404
+    if not _is_owner(project):
+        return jsonify({"error": "Просматривать запросы может только владелец проекта"}), 403
+    return jsonify(db.list_project_invite_requests(project_id))
+
+
+@projects_bp.route("/<project_id>/invite-requests", methods=["POST"])
+def create_invite_request(project_id):
+    project = db.get_project_by_id(project_id)
+    if not project:
+        return jsonify({"error": "Проект не найден"}), 404
+    denied = _require_member(project_id)
+    if denied:
+        return denied
+    if _is_owner(project):
+        return jsonify({"error": "Владелец может отправить приглашение напрямую"}), 400
+    data = request.get_json(silent=True) or {}
+    result, error = db.create_project_invite_request(project_id, session.get("user_id"), data.get("user_id"))
+    if error:
+        return jsonify({"error": error}), 400
+    return jsonify({"message": "Запрос отправлен владельцу проекта", "request": result}), 201
+
+
+@projects_bp.route("/invite-requests/<request_id>/respond", methods=["POST"])
+def respond_invite_request(request_id):
+    data = request.get_json(silent=True) or {}
+    accept = data.get("accept")
+    if not isinstance(accept, bool):
+        return jsonify({"error": "Укажите, одобрить или отклонить запрос"}), 400
+    result, error = db.respond_project_invite_request(request_id, session.get("user_id"), accept)
+    if error:
+        return jsonify({"error": error}), 403
+    return jsonify({"message": "Приглашение отправлено пользователю" if accept else "Запрос отклонён", "request": result})
+
+
 @projects_bp.route("/<project_id>/invite-candidates", methods=["GET"])
 def invite_candidates(project_id):
     project = db.get_project_by_id(project_id)
     if not project:
         return jsonify({"error": "Проект не найден"}), 404
-    if not _is_owner(project):
-        return jsonify({"error": "Приглашать участников может только владелец проекта"}), 403
+    denied = _require_member(project_id)
+    if denied:
+        return denied
     return jsonify(db.list_project_invite_candidates(project_id))
 
 

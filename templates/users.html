@@ -1,124 +1,80 @@
 {% extends "base.html" %}
 {% block title %}Участники — Kanban Board{% endblock %}
 {% block content %}
-<section class="panel">
-  <div class="section-heading">
-    <div><h2>Участники</h2><p class="muted">Выберите проект, чтобы увидеть его команду.</p></div>
-  </div>
-  <label for="memberProjectSelect">Проект</label>
-  <select id="memberProjectSelect"><option value="">Загрузка проектов...</option></select>
-  <div id="memberMessage" class="muted" role="status"></div>
+<section class="panel team-intro">
+  <div><span class="team-kicker">РАБОЧЕЕ ПРОСТРАНСТВО</span><h2>Команда проекта</h2><p class="muted">Участники, приглашения и запросы на расширение команды в одном месте.</p></div>
+  <div class="team-project-select"><label for="memberProjectSelect">Текущий проект</label><select id="memberProjectSelect"><option value="">Загрузка проектов...</option></select></div>
+  <div id="memberMessage" class="team-message" role="status" aria-live="polite"></div>
 </section>
-<section class="panel">
-  <div class="section-heading"><h2>Команда проекта</h2><div class="member-heading-actions"><button class="btn" id="openInviteModal" type="button" hidden>＋ Пригласить</button><button class="btn btn-secondary" id="refreshMembers" type="button">Обновить</button></div></div>
+<section class="panel team-panel">
+  <div class="section-heading"><div><h2>Участники проекта</h2><p class="muted" id="membersSummary">Состав команды</p></div><div class="member-heading-actions"><button class="btn" id="openInviteModal" type="button" hidden>＋ Пригласить человека</button><button class="btn btn-secondary" id="refreshMembers" type="button">Обновить</button></div></div>
+  <div class="team-toolbar"><input id="memberSearch" type="search" placeholder="Поиск по имени или логину" aria-label="Поиск участников"><span id="memberCount" class="team-count">0 участников</span></div>
   <div id="membersList" class="participant-list">Выберите проект.</div>
 </section>
+<section class="panel" id="inviteRequestsPanel" hidden>
+  <div class="section-heading"><div><h2>Запросы на приглашение</h2><p class="muted">Участники предлагают новых людей. Вы решаете, отправлять ли им приглашение.</p></div><button class="btn btn-secondary" id="refreshInviteRequests" type="button">Обновить</button></div>
+  <div id="inviteRequestsList" class="invitation-list"><p class="muted">Загрузка запросов...</p></div>
+</section>
 <section class="panel" id="outgoingPanel" hidden>
-  <div class="section-heading"><h2>Отправленные приглашения</h2><button class="btn btn-secondary" id="refreshOutgoing" type="button">Обновить</button></div>
+  <div class="section-heading"><div><h2>Отправленные приглашения</h2><p class="muted">Ожидают ответа от приглашённых пользователей.</p></div><button class="btn btn-secondary" id="refreshOutgoing" type="button">Обновить</button></div>
   <div id="outgoingList" class="invitation-list">Загрузка...</div>
 </section>
 <section class="panel">
-  <div class="section-heading"><h2>Входящие приглашения</h2><button class="btn btn-secondary" id="refreshInvitations" type="button">Обновить</button></div>
+  <div class="section-heading"><div><h2>Входящие приглашения</h2><p class="muted">Приглашения, адресованные вам.</p></div><button class="btn btn-secondary" id="refreshInvitations" type="button">Обновить</button></div>
   <div id="invitationsList" class="invitation-list">Загрузка приглашений...</div>
 </section>
 
 <div class="modal-backdrop" id="inviteModal" hidden>
-  <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="inviteTitle">
-    <div class="modal-heading"><h2 id="inviteTitle">Пригласить участника</h2><button class="icon-close" type="button" id="closeInviteModal">×</button></div>
-    <p class="muted">Выберите зарегистрированного пользователя. Он получит приглашение и сам решит, вступать ли в проект.</p>
-    <label for="inviteUserSelect">Пользователь</label><select id="inviteUserSelect"></select>
+  <section class="modal-dialog invite-dialog" role="dialog" aria-modal="true" aria-labelledby="inviteTitle">
+    <div class="modal-heading"><div><span class="team-kicker">КОМАНДА ПРОЕКТА</span><h2 id="inviteTitle">Добавить участника</h2></div><button class="icon-close" type="button" id="closeInviteModal" aria-label="Закрыть">×</button></div>
+    <p class="muted" id="inviteDescription">Найдите зарегистрированного пользователя. Владелец отправит приглашение напрямую, а участник направит запрос владельцу на подтверждение.</p>
+    <label for="inviteSearch">Поиск пользователя</label><input id="inviteSearch" type="search" placeholder="Имя или логин...">
+    <label for="inviteUserSelect">Пользователь</label><select id="inviteUserSelect" size="6" aria-label="Выберите пользователя"></select>
+    <div id="inviteEmpty" class="invite-empty" hidden>Нет доступных пользователей для добавления.</div>
     <div class="modal-actions"><button class="btn btn-secondary" type="button" id="cancelInvite">Отмена</button><button class="btn" type="button" id="sendInvite">Отправить приглашение</button></div>
   </section>
 </div>
 <style>
-.section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.member-heading-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.participant-list,.invitation-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px}
-.participant-card,.invitation-card{background:#f3f6fa;border:1px solid #e1e7ef;border-radius:10px;padding:15px}
-.participant-card h3,.invitation-card h3{margin:0 0 7px;font-size:15px}
-.participant-card p,.invitation-card p{margin:5px 0;color:#5c6879;overflow-wrap:anywhere}
-.member-actions,.invite-actions{display:flex;gap:8px;margin-top:12px}
-.modal-backdrop[hidden]{display:none}.modal-backdrop{position:fixed;inset:0;z-index:3000;background:#101b2c99;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal-dialog{background:white;width:min(480px,100%);border-radius:14px;padding:24px;box-shadow:0 20px 60px #0004}
-.modal-heading{display:flex;justify-content:space-between;align-items:center}.modal-heading h2{margin:0}
-.icon-close{border:0;background:#edf1f6;border-radius:8px;width:34px;height:34px;font-size:22px;cursor:pointer}
-.modal-dialog select{max-width:none;width:100%}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.team-intro{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,300px);gap:18px;align-items:center}.team-intro h2{margin:5px 0}.team-kicker{font-size:10px;letter-spacing:1.4px;font-weight:800;color:#6481a5}.team-project-select label,.invite-dialog label{display:block;font-size:12px;font-weight:700;color:#536176;margin:0 0 7px}.team-project-select select{width:100%;max-width:none}.team-message{grid-column:1/-1;min-height:20px;color:#526b8b;font-size:13px}.section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.section-heading h2{margin:0 0 4px}.section-heading p{margin:0}.member-heading-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.team-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:17px 0 4px}.team-toolbar input{max-width:360px}.team-count{font-size:12px;color:#718096;white-space:nowrap}.participant-list,.invitation-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:13px;margin-top:14px}.participant-card,.invitation-card{background:linear-gradient(145deg,#fff,#f7f9fc);border:1px solid #e2e8f0;border-radius:13px;padding:16px;min-width:0;box-shadow:0 3px 12px #25385808}.participant-card{position:relative;overflow:hidden}.participant-card:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:#91a9c6}.participant-card.owner-card:before{background:#d6a94f}.participant-top{display:flex;align-items:center;gap:11px}.participant-avatar{width:42px;height:42px;border-radius:12px;background:#e8eef7;color:#395879;display:grid;place-items:center;font-size:16px;font-weight:800;flex:0 0 auto}.owner-card .participant-avatar{background:#fbf1d9;color:#8b681c}.participant-identity{min-width:0}.participant-card h3,.invitation-card h3{margin:0 0 4px;font-size:15px;overflow-wrap:anywhere}.participant-login{font-size:12px;color:#78869a;overflow-wrap:anywhere}.role-chip{display:inline-flex;margin-top:12px;padding:5px 9px;border-radius:20px;background:#edf2f8;color:#506782;font-size:11px;font-weight:700}.owner-card .role-chip{background:#fbf3df;color:#87691e}.participant-email{font-size:12px;color:#6e7b8d;margin:12px 0 0;overflow-wrap:anywhere}.member-actions,.invite-actions{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}.member-actions .btn,.invite-actions .btn{font-size:12px;padding:8px 11px}.invitation-card p{margin:6px 0;color:#5c6879;overflow-wrap:anywhere;font-size:13px}.invitation-card .request-person{font-weight:700;color:#34445b}.invite-status{font-size:11px;font-weight:700;color:#8b6b27;background:#fbf2dc;padding:5px 9px;border-radius:20px;display:inline-flex;margin-top:8px}.modal-backdrop[hidden]{display:none}.modal-backdrop{position:fixed;inset:0;z-index:3000;background:#101b2c99;display:flex;align-items:center;justify-content:center;padding:18px}.modal-dialog{background:white;width:min(540px,100%);max-height:min(88vh,760px);overflow:auto;border-radius:17px;padding:24px;box-shadow:0 20px 60px #0004}.modal-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:10px}.modal-heading h2{margin:4px 0 0}.icon-close{border:0;background:#edf1f6;border-radius:9px;width:36px;height:36px;font-size:22px;cursor:pointer;flex:0 0 auto}.modal-dialog input,.modal-dialog select{max-width:none;width:100%}.modal-dialog select[size]{height:190px;padding:6px}.modal-dialog select option{padding:9px;border-radius:6px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.invite-empty{font-size:13px;color:#7b8797;padding:12px;background:#f6f8fb;border-radius:9px;margin-top:8px}.muted-empty{grid-column:1/-1;padding:22px;text-align:center;border:1px dashed #d7e0ea;border-radius:11px;color:#718096;background:#f8fafc}
+@media(max-width:700px){.team-intro{grid-template-columns:1fr}.team-toolbar{align-items:stretch;flex-direction:column}.team-toolbar input{max-width:none}.modal-dialog{padding:19px}.participant-list,.invitation-list{grid-template-columns:1fr}}
 </style>
 <script>
 const $=id=>document.getElementById(id);
-let selectedProjectId=null, canManageProject=false;
+let selectedProjectId=null,canManageProject=false,memberRows=[],candidateRows=[];
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 async function jsonFetch(url,options={}){const r=await fetch(url,options);let d={};try{d=await r.json()}catch(_){}if(!r.ok)throw new Error(d.error||'Ошибка запроса');return d;}
+function showMessage(message){$('memberMessage').textContent=message;}
+function renderMembers(){
+ const q=$('memberSearch').value.trim().toLocaleLowerCase('ru-RU');
+ const rows=memberRows.filter(m=>[m.full_name,m.username,m.email].join(' ').toLocaleLowerCase('ru-RU').includes(q));
+ $('memberCount').textContent=`${memberRows.length} ${memberRows.length===1?'участник':memberRows.length>1&&memberRows.length<5?'участника':'участников'}`;
+ $('membersSummary').textContent=`В команде ${memberRows.length} · отображается ${rows.length}`;
+ $('membersList').innerHTML=rows.length?rows.map(m=>{
+  const owner=m.role==='owner';const display=m.full_name||m.username||'Пользователь';const initial=esc((display.trim()[0]||'?').toLocaleUpperCase('ru-RU'));
+  return `<article class="participant-card ${owner?'owner-card':''}"><div class="participant-top"><div class="participant-avatar">${initial}</div><div class="participant-identity"><h3>${esc(display)}</h3><div class="participant-login">@${esc(m.username)}</div></div></div><span class="role-chip">${owner?'Владелец проекта':'Участник команды'}</span><p class="participant-email">${esc(m.email||'Email не указан')}</p>${canManageProject&&!owner?`<div class="member-actions"><button class="btn danger" type="button" onclick="removeMember('${esc(m._id)}')">Исключить из проекта</button></div>`:''}</article>`;
+ }).join(''):'<div class="muted-empty">'+(q?'По вашему запросу участники не найдены.':'В проекте пока нет участников.')+'</div>';
+}
 async function loadProjectChoices(){
- const projects=await jsonFetch('/projects/');
- $('memberProjectSelect').innerHTML=projects.length?projects.map(p=>`<option value="${esc(p._id)}">${esc(p.name)}</option>`).join(''):'<option value="">Нет доступных проектов</option>';
- if(projects.length){const requested=new URLSearchParams(location.search).get('project_id');if(requested&&projects.some(p=>p._id===requested))$('memberProjectSelect').value=requested;selectedProjectId=$('memberProjectSelect').value;await loadMembers();}
- else{$('membersList').textContent='Вы пока не состоите ни в одном проекте.';$('openInviteModal').hidden=true;}
+ const projects=await jsonFetch('/projects/');$('memberProjectSelect').innerHTML=projects.length?projects.map(p=>`<option value="${esc(p._id)}">${esc(p.name)}</option>`).join(''):'<option value="">Нет доступных проектов</option>';
+ if(projects.length){const requested=new URLSearchParams(location.search).get('project_id');if(requested&&projects.some(p=>p._id===requested))$('memberProjectSelect').value=requested;await loadMembers();}
+ else{$('membersList').innerHTML='<div class="muted-empty">Вы пока не состоите ни в одном проекте.</div>';$('openInviteModal').hidden=true;$('memberCount').textContent='0 участников';}
 }
 async function loadMembers(){
- selectedProjectId=$('memberProjectSelect').value;
- if(!selectedProjectId){$('membersList').textContent='Выберите проект.';$('openInviteModal').hidden=true;return;}
- try{
-  const data=await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/members`);
-  canManageProject=data.can_manage;$('openInviteModal').hidden=!canManageProject;
-  $('outgoingPanel').hidden=!canManageProject;
-  if(canManageProject)await loadOutgoingInvitations();
-  $('membersList').innerHTML=data.members.length?data.members.map(m=>`<article class="participant-card">
-    <h3>${esc(m.full_name||m.username)}</h3><p>Никнейм: ${esc(m.username)}</p><p>Email: ${esc(m.email)}</p>
-    <p><b>${m.role==='owner'?'Владелец проекта':'Участник'}</b></p>
-    ${canManageProject&&m.role!=='owner'?`<div class="member-actions"><button class="btn danger" type="button" onclick="removeMember('${esc(m._id)}')">Исключить</button></div>`:''}
-   </article>`).join(''):'<p class="muted">В проекте пока нет участников.</p>';
- }catch(e){$('membersList').textContent=e.message;$('openInviteModal').hidden=true;}
+ selectedProjectId=$('memberProjectSelect').value;if(!selectedProjectId){$('membersList').innerHTML='<div class="muted-empty">Выберите проект.</div>';return;}
+ try{const data=await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/members`);canManageProject=data.can_manage;memberRows=data.members||[];$('openInviteModal').hidden=false;$('outgoingPanel').hidden=!canManageProject;$('inviteRequestsPanel').hidden=!canManageProject;renderMembers();if(canManageProject){await Promise.all([loadOutgoingInvitations(),loadInviteRequests()]);}}
+ catch(e){$('membersList').innerHTML=`<div class="muted-empty">${esc(e.message)}</div>`;$('openInviteModal').hidden=true;}
 }
-async function removeMember(id){
- if(!confirm('Исключить участника из проекта? Он потеряет доступ к проекту и его задачам.'))return;
- try{await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/members/${encodeURIComponent(id)}`,{method:'DELETE'});await loadMembers();}
- catch(e){$('memberMessage').textContent=e.message;}
-}
-async function loadInvitations(){
- try{const rows=await jsonFetch('/projects/invitations');
- $('invitationsList').innerHTML=rows.length?rows.map(i=>`<article class="invitation-card">
-  <h3>${esc(i.project_name)}</h3><p>Приглашает: ${esc(i.inviter_username)}</p>
-  <div class="invite-actions"><button class="btn" type="button" onclick="respondInvitation('${esc(i._id)}',true)">Принять</button><button class="btn danger" type="button" onclick="respondInvitation('${esc(i._id)}',false)">Отклонить</button></div>
- </article>`).join(''):'<p class="muted">Новых приглашений нет.</p>';
- }catch(e){$('invitationsList').textContent=e.message;}
-}
-async function loadOutgoingInvitations(){
- try{
-  const rows=await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/invitations`);
-  $('outgoingList').innerHTML=rows.length?rows.map(i=>`<article class="invitation-card">
-   <h3>@${esc(i.invitee_username)}</h3><p><span class="muted">Ожидает ответа</span></p>
-   <div class="invite-actions"><button class="btn danger" type="button" onclick="cancelOutgoingInvitation('${esc(i._id)}')">Отменить</button></div>
-  </article>`).join(''):'<p class="muted">Нет ожидающих приглашений.</p>';
- }catch(e){$('outgoingList').textContent=e.message;}
-}
-async function cancelOutgoingInvitation(id){
- try{await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/invitations/${encodeURIComponent(id)}`,{method:'DELETE'});await loadOutgoingInvitations();}
- catch(e){$('memberMessage').textContent=e.message;}
-}
-async function respondInvitation(id,accept){
- try{await jsonFetch(`/projects/invitations/${encodeURIComponent(id)}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accept})});await loadInvitations();await loadProjectChoices();}
- catch(e){$('memberMessage').textContent=e.message;}
-}
-async function openInvite(){
- try{const users=await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/invite-candidates`);
- $('inviteUserSelect').innerHTML=users.length?users.map(u=>`<option value="${esc(u._id)}">${esc(u.full_name||u.username)} (@${esc(u.username)})</option>`).join(''):'<option value="">Нет доступных пользователей для приглашения</option>';
- $('sendInvite').disabled=!users.length;$('inviteModal').hidden=false;
- }catch(e){$('memberMessage').textContent=e.message;}
-}
-async function sendInvitation(){
- const id=$('inviteUserSelect').value;if(!id)return;
- try{await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/invitations`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:id})});$('inviteModal').hidden=true;$('memberMessage').textContent='Приглашение отправлено.';await loadMembers();}
- catch(e){$('memberMessage').textContent=e.message;}
-}
-$('memberProjectSelect').addEventListener('change',loadMembers);
-$('refreshMembers').addEventListener('click',loadMembers);
-$('refreshInvitations').addEventListener('click',loadInvitations);$('refreshOutgoing').addEventListener('click',loadOutgoingInvitations);
-$('openInviteModal').addEventListener('click',openInvite);
-$('sendInvite').addEventListener('click',sendInvitation);
-$('closeInviteModal').addEventListener('click',()=>$('inviteModal').hidden=true);
-$('cancelInvite').addEventListener('click',()=>$('inviteModal').hidden=true);
-$('inviteModal').addEventListener('click',e=>{if(e.target===$('inviteModal'))$('inviteModal').hidden=true;});
-loadProjectChoices().catch(e=>$('membersList').textContent=e.message);loadInvitations();
+async function removeMember(id){if(!confirm('Исключить участника из проекта? Он потеряет доступ к проекту и его задачам.'))return;try{await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/members/${encodeURIComponent(id)}`,{method:'DELETE'});showMessage('Участник исключён из проекта.');await loadMembers();}catch(e){showMessage(e.message);}}
+async function loadInvitations(){try{const rows=await jsonFetch('/projects/invitations');$('invitationsList').innerHTML=rows.length?rows.map(i=>`<article class="invitation-card"><h3>${esc(i.project_name)}</h3><p>Приглашает: <b>@${esc(i.inviter_username)}</b></p><div class="invite-actions"><button class="btn" type="button" onclick="respondInvitation('${esc(i._id)}',true)">Принять</button><button class="btn danger" type="button" onclick="respondInvitation('${esc(i._id)}',false)">Отклонить</button></div></article>`).join(''):'<div class="muted-empty">Новых приглашений нет.</div>';}catch(e){$('invitationsList').textContent=e.message;}}
+async function loadOutgoingInvitations(){try{const rows=await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/invitations`);$('outgoingList').innerHTML=rows.length?rows.map(i=>`<article class="invitation-card"><h3>@${esc(i.invitee_username)}</h3><p>Ожидает ответа приглашённого пользователя.</p><div class="invite-actions"><button class="btn danger" type="button" onclick="cancelOutgoingInvitation('${esc(i._id)}')">Отменить</button></div></article>`).join(''):'<div class="muted-empty">Нет ожидающих приглашений.</div>';}catch(e){$('outgoingList').textContent=e.message;}}
+async function loadInviteRequests(){try{const rows=await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/invite-requests`);$('inviteRequestsList').innerHTML=rows.length?rows.map(r=>`<article class="invitation-card"><span class="invite-status">Ожидает решения владельца</span><h3>${esc(r.invitee_full_name||r.invitee_username)}</h3><p class="request-person">Кого предлагают пригласить · @${esc(r.invitee_username)}</p><p>Запросил участник · <b>@${esc(r.requester_username)}</b></p>${r.invitee_email?`<p>Email · ${esc(r.invitee_email)}</p>`:''}<div class="invite-actions"><button class="btn" type="button" onclick="respondInviteRequest('${esc(r._id)}',true)">Одобрить и отправить приглашение</button><button class="btn danger" type="button" onclick="respondInviteRequest('${esc(r._id)}',false)">Отклонить</button></div></article>`).join(''):'<div class="muted-empty">Новых запросов на приглашение нет.</div>';}catch(e){$('inviteRequestsList').textContent=e.message;}}
+async function respondInviteRequest(id,accept){const question=accept?'Одобрить запрос и отправить выбранному пользователю приглашение?':'Отклонить запрос на приглашение?';if(!confirm(question))return;try{const result=await jsonFetch(`/projects/invite-requests/${encodeURIComponent(id)}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accept})});showMessage(result.message);await Promise.all([loadInviteRequests(),loadOutgoingInvitations()]);}catch(e){showMessage(e.message);}}
+async function cancelOutgoingInvitation(id){try{await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/invitations/${encodeURIComponent(id)}`,{method:'DELETE'});await loadOutgoingInvitations();}catch(e){showMessage(e.message);}}
+async function respondInvitation(id,accept){try{await jsonFetch(`/projects/invitations/${encodeURIComponent(id)}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accept})});await loadInvitations();await loadProjectChoices();}catch(e){showMessage(e.message);}}
+function renderCandidateOptions(){const q=$('inviteSearch').value.trim().toLocaleLowerCase('ru-RU');const rows=candidateRows.filter(u=>[u.full_name,u.username].join(' ').toLocaleLowerCase('ru-RU').includes(q));$('inviteUserSelect').innerHTML=rows.map(u=>`<option value="${esc(u._id)}">${esc(u.full_name||u.username)} · @${esc(u.username)}</option>`).join('');$('inviteEmpty').hidden=rows.length>0;$('inviteUserSelect').hidden=!rows.length;$('sendInvite').disabled=!rows.length;}
+async function openInvite(){try{candidateRows=await jsonFetch(`/projects/${encodeURIComponent(selectedProjectId)}/invite-candidates`);$('inviteSearch').value='';renderCandidateOptions();$('inviteTitle').textContent=canManageProject?'Пригласить участника':'Предложить приглашение';$('inviteDescription').textContent=canManageProject?'Выберите пользователя. Ему будет отправлено приглашение в проект.':'Выберите пользователя. Запрос поступит владельцу проекта; приглашение будет отправлено только после его одобрения.';$('sendInvite').textContent=canManageProject?'Отправить приглашение':'Отправить запрос владельцу';$('inviteModal').hidden=false;}catch(e){showMessage(e.message);}}
+async function sendInvitation(){const id=$('inviteUserSelect').value;if(!id)return;const url=canManageProject?`/projects/${encodeURIComponent(selectedProjectId)}/invitations`:`/projects/${encodeURIComponent(selectedProjectId)}/invite-requests`;try{const result=await jsonFetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:id})});$('inviteModal').hidden=true;showMessage(canManageProject?'Приглашение отправлено пользователю.':(result.message||'Запрос отправлен владельцу проекта.'));if(canManageProject)await loadOutgoingInvitations();}catch(e){showMessage(e.message);}}
+$('memberProjectSelect').addEventListener('change',loadMembers);$('refreshMembers').addEventListener('click',loadMembers);$('memberSearch').addEventListener('input',renderMembers);$('refreshInvitations').addEventListener('click',loadInvitations);$('refreshOutgoing').addEventListener('click',loadOutgoingInvitations);$('refreshInviteRequests').addEventListener('click',loadInviteRequests);$('openInviteModal').addEventListener('click',openInvite);$('sendInvite').addEventListener('click',sendInvitation);$('inviteSearch').addEventListener('input',renderCandidateOptions);$('closeInviteModal').addEventListener('click',()=>$('inviteModal').hidden=true);$('cancelInvite').addEventListener('click',()=>$('inviteModal').hidden=true);$('inviteModal').addEventListener('click',e=>{if(e.target===$('inviteModal'))$('inviteModal').hidden=true;});document.addEventListener('keydown',e=>{if(e.key==='Escape')$('inviteModal').hidden=true;});
+loadProjectChoices().catch(e=>showMessage(e.message));loadInvitations();
 </script>
 {% endblock %}

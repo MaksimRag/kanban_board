@@ -310,14 +310,16 @@ document.getElementById('editTaskForm').addEventListener('submit',async function
   const button=document.getElementById('saveTaskButton');
   button.disabled=true;button.textContent='Сохранение...';
   try{
-    await responseData(await fetch('/tasks/'+encodeURIComponent(editingTaskId),{
+    const updatedTask=await responseData(await fetch('/tasks/'+encodeURIComponent(editingTaskId),{
       method:'PATCH',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({title,description})
     }));
+    const taskIndex=allTasks.findIndex(item=>item._id===editingTaskId);
+    if(taskIndex!==-1)allTasks[taskIndex]=updatedTask;
     closeEditTaskModal();
+    renderBoard();
     showMessage('Задача успешно обновлена.');
-    await loadTasks();
   }catch(error){
     showMessage('Не удалось отредактировать задачу: '+error.message,true);
   }finally{

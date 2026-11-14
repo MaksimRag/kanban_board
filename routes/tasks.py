@@ -18,12 +18,11 @@ def _permissions(task):
     user_id = session.get("user_id")
     is_owner = bool(project and project.get("owner_id") == user_id)
     is_member = _can_access(task)
-    is_creator = bool(task and task.get("created_by_id") == user_id)
     can_edit = is_member
     return {
         "can_change_status": is_member,
         "can_edit": can_edit,
-        "can_delete": bool(is_owner or is_creator),
+        "can_delete": is_member,
         "can_assign": is_member,
         "can_view": is_member,
     }
@@ -157,5 +156,5 @@ def delete_task(task_id):
         return error
     permissions = _permissions(task)
     if not permissions["can_delete"]:
-        return jsonify({"error": "Удалить задачу может её создатель или владелец проекта"}), 403
+        return jsonify({"error": "Удалять задачи могут только участники проекта"}), 403
     return ("", 204) if db.delete_task(task_id) else (jsonify({"error": "Не удалось удалить задачу"}), 404)
