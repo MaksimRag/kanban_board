@@ -37,27 +37,33 @@
   </button>
 </header>
 
-<nav>
-  <a href="/dashboard">Главная</a>
-  <a href="/projects-page">Проекты</a>
-  <a href="/users-page">Участники</a>
-  <a href="/tasks-page">Задачи</a>
-  <a href="/task-form">Создать задачу</a>
-  {% if session.get("user_id") %}
-  <button class="nav-notifications" id="notificationsToggle" type="button" aria-haspopup="dialog" aria-expanded="false">
-    <span class="bell" aria-hidden="true">🔔</span> Уведомления
-    <span class="notification-badge" id="notificationBadge" hidden>0</span>
+<nav class="site-navigation" aria-label="Основная навигация">
+  <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button"
+          aria-expanded="false" aria-controls="primaryNavLinks">
+    <span class="mobile-menu-icon" aria-hidden="true">☰</span>
+    <span>Меню</span>
+    <span class="mobile-menu-chevron" aria-hidden="true">⌄</span>
   </button>
-  {% endif %}
 
-  <div class="user-panel">
-    <button class="username" id="accountToggle" type="button" aria-haspopup="dialog" aria-expanded="false">
-      {{ session.get("username", "") }}
+  <div class="nav-links" id="primaryNavLinks">
+    <a href="/dashboard">Главная</a>
+    <a href="/projects-page">Проекты</a>
+    <a href="/users-page">Участники</a>
+    <a href="/tasks-page">Задачи</a>
+    <a href="/task-form">Создать задачу</a>
+    {% if session.get("user_id") %}
+    <button class="nav-notifications" id="notificationsToggle" type="button" aria-haspopup="dialog" aria-expanded="false">
+      <span class="bell" aria-hidden="true">🔔</span> Уведомления
+      <span class="notification-badge" id="notificationBadge" hidden>0</span>
     </button>
+    {% endif %}
 
-    <button class="btn logout-btn" type="button" data-action="logout">
-      Выйти
-    </button>
+    <div class="user-panel">
+      <button class="username" id="accountToggle" type="button" aria-haspopup="dialog" aria-expanded="false">
+        {{ session.get("username", "") }}
+      </button>
+      <button class="btn logout-btn" type="button" data-action="logout">Выйти</button>
+    </div>
   </div>
 </nav>
 

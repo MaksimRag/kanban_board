@@ -1,3 +1,28 @@
+
+/* Mobile navigation dropdown */
+const mobileMenuToggle = document.getElementById("mobileMenuToggle");
+const primaryNavLinks = document.getElementById("primaryNavLinks");
+
+function closeMobileMenu() {
+  if (!mobileMenuToggle || !primaryNavLinks) return;
+  mobileMenuToggle.setAttribute("aria-expanded", "false");
+  primaryNavLinks.classList.remove("is-open");
+}
+mobileMenuToggle?.addEventListener("click", () => {
+  const isOpen = mobileMenuToggle.getAttribute("aria-expanded") === "true";
+  mobileMenuToggle.setAttribute("aria-expanded", String(!isOpen));
+  primaryNavLinks?.classList.toggle("is-open", !isOpen);
+});
+primaryNavLinks?.querySelectorAll("a").forEach(link => {
+  link.addEventListener("click", closeMobileMenu);
+});
+document.addEventListener("click", event => {
+  if (!event.target.closest(".site-navigation")) closeMobileMenu();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeMobileMenu();
+});
+
 const accountToggle = document.getElementById("accountToggle");
 const accountBackdrop = document.getElementById("accountModalBackdrop");
 const accountMessage = document.getElementById("accountMessage");
