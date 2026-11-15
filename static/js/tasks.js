@@ -103,7 +103,7 @@ function renderTask(task){
       onclick="openTaskDetails('${escapeHtml(task._id)}')"
       ${task.can_change_status ? 'ondragstart="onCardDragStart(event)" ondragend="onCardDragEnd(event)"' : ''}>
     <div class="task-card-top"><span class="task-status status-${escapeHtml(task.status)}">${escapeHtml(statusNames[task.status]||task.status)}</span>
-      ${task.can_change_status ? '<span class="drag-hint" role="button" tabindex="0" aria-label="Перетащить задачу" title="Зажмите и переместите задачу">⠿ <span>Перетащить</span></span>' : ''}</div>
+      ${task.can_change_status ? '<span class="drag-hint" role="button" tabindex="0" aria-label="Переместить задачу" title="Зажмите, чтобы переместить задачу">⠿</span>' : ''}</div>
     <h3>${escapeHtml(task.title)}</h3>
     <div class="task-meta"><span><b>Исполнитель:</b> ${escapeHtml(task.assignee_username||'Не назначен')}</span></div>
     <div class="task-open-hint">Нажмите, чтобы открыть задачу →</div>
