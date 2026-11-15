@@ -2,51 +2,34 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Вход и регистрация — Kanban Board</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; display: grid; place-items: center;
-      padding: 20px; background: #f1f4f8; font: 15px Arial, sans-serif; color: #202938;
-    }
-    .auth {
-      width: min(430px, 100%); background: #fff; padding: 30px;
-      border-radius: 14px; box-shadow: 0 12px 40px #17243a18;
-    }
-    h1 { margin: 0 0 8px; font-size: 25px; text-align: center; }
-    .subtitle { text-align: center; color: #687386; margin: 0 0 24px; }
-    .tabs { display: flex; background: #eef2f7; border-radius: 8px; padding: 4px; margin-bottom: 18px; }
-    .tabs button {
-      flex: 1; border: 0; padding: 11px; border-radius: 6px; cursor: pointer;
-      background: transparent; font-weight: 600; color: #536176;
-    }
-    .tabs button.active { background: #315b91; color: white; }
-    label { display: block; margin: 12px 0 6px; font-weight: 600; }
-    input {
-      width: 100%; padding: 12px; border: 1px solid #cbd2dc;
-      border-radius: 7px; font-size: 15px;
-    }
-    input:focus { outline: 2px solid #b8cbea; border-color: #315b91; }
-    .submit {
-      width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 7px;
-      background: #315b91; color: white; font-size: 15px; cursor: pointer;
-    }
-    .submit:hover { background: #24466f; }
-    .submit:disabled { opacity: .65; cursor: wait; }
-    .message {
-      display: none; margin: 16px 0 0; padding: 12px 14px; border-radius: 7px;
-      line-height: 1.4; text-align: left; overflow-wrap: anywhere;
-    }
-    .message.show { display: block; }
-    .message.error { color: #922b35; background: #fde8e9; border: 1px solid #f3b9bd; }
-    .message.success { color: #246b3b; background: #e5f6e9; border: 1px solid #b7e3c1; }
-    .hidden { display: none !important; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap" rel="stylesheet">
+  <title>Вход и регистрация — PROJECTHUB</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 </head>
 <body>
+<main class="auth-page">
+  <button class="theme-toggle" id="themeToggle" type="button"
+          aria-label="Переключить на тёмную тему" aria-pressed="false">
+    <span class="theme-toggle-icon" aria-hidden="true">☾</span>
+    <span class="theme-toggle-label">Тёмная тема</span>
+  </button>
+  <div class="wave-scene" aria-hidden="true">
+    <span class="wave wave-back"></span>
+    <span class="wave wave-middle"></span>
+    <span class="wave wave-front"></span>
+    <span class="wave-glow"></span>
+    <span class="wave-grain"></span>
+  </div>
 <section class="auth">
-  <h1>Kanban Board</h1>
+  <div class="auth-brand-logo" aria-label="PROJECTHUB">
+    <img class="auth-logo-light" src="{{ url_for('static', filename='img/projecthub-logo-light.png') }}" alt="PROJECTHUB">
+    <img class="auth-logo-dark" src="{{ url_for('static', filename='img/projecthub-logo-dark.png') }}" alt="PROJECTHUB">
+  </div>
+  <p class="auth-kicker">КОМАНДНАЯ РАБОТА</p>
+  <h1>PROJECTHUB</h1>
   <p class="subtitle">Система управления задачами</p>
 
   <div class="tabs">
@@ -78,158 +61,7 @@
 
   <div id="message" class="message" role="alert" aria-live="polite"></div>
 </section>
-
-<script>
-const loginForm = document.getElementById('loginForm');
-const registerForm = document.getElementById('registerForm');
-const messageBox = document.getElementById('message');
-const loginTab = document.getElementById('loginTab');
-const registerTab = document.getElementById('registerTab');
-
-function showMessage(text, type = 'error') {
-  messageBox.textContent = text;
-  messageBox.className = `message show ${type}`;
-}
-
-function clearMessage() {
-  messageBox.textContent = '';
-  messageBox.className = 'message';
-}
-
-function getRussianValidationMessage(field) {
-  const validity = field.validity;
-
-  if (validity.valueMissing) {
-    if (field.id === 'username') return 'Введите логин.';
-    if (field.id === 'email') return 'Введите адрес электронной почты.';
-    if (field.id === 'confirmPassword') return 'Повторите пароль.';
-    if (field.id === 'login') return 'Введите логин или Email.';
-    if (field.type === 'password') return 'Введите пароль.';
-    return 'Заполните обязательное поле.';
-  }
-
-  if (validity.typeMismatch && field.type === 'email') {
-    return 'Введите корректный адрес электронной почты.';
-  }
-  if (validity.tooShort) {
-    if (field.id === 'username') return 'Логин должен содержать не менее 3 символов.';
-    if (field.type === 'password') return 'Пароль должен содержать не менее 8 символов.';
-    return 'Слишком короткое значение.';
-  }
-  if (validity.tooLong) {
-    if (field.id === 'username') return 'Логин не должен превышать 30 символов.';
-    if (field.id === 'email') return 'Email не должен превышать 254 символа.';
-    if (field.type === 'password') return 'Пароль не должен превышать 128 символов.';
-    return 'Слишком длинное значение.';
-  }
-  if (validity.patternMismatch && field.id === 'username') {
-    return 'Логин может содержать только латинские буквы, цифры и знак подчёркивания.';
-  }
-  if (validity.badInput) {
-    return 'Проверьте формат введённых данных.';
-  }
-  return 'Проверьте правильность заполнения полей.';
-}
-
-function validateForm(form) {
-  for (const field of form.querySelectorAll('input')) {
-    if (!field.checkValidity()) {
-      showMessage(getRussianValidationMessage(field), 'error');
-      field.focus();
-      return false;
-    }
-  }
-  return true;
-}
-
-function showForm(mode) {
-  const isLogin = mode === 'login';
-  loginForm.classList.toggle('hidden', !isLogin);
-  registerForm.classList.toggle('hidden', isLogin);
-  loginTab.classList.toggle('active', isLogin);
-  registerTab.classList.toggle('active', !isLogin);
-  clearMessage();
-}
-
-loginTab.addEventListener('click', () => showForm('login'));
-registerTab.addEventListener('click', () => showForm('register'));
-
-async function requestJson(url, data) {
-  let response;
-  try {
-    response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-  } catch (error) {
-    throw new Error('Не удалось связаться с сервером. Проверьте подключение и попробуйте ещё раз.');
-  }
-
-  let result = {};
-  try {
-    result = await response.json();
-  } catch (error) {
-    throw new Error('Сервер вернул некорректный ответ. Попробуйте позже.');
-  }
-
-  if (!response.ok) {
-    throw new Error(result.error || `Ошибка запроса (${response.status})`);
-  }
-  return result;
-}
-
-function setFormBusy(form, busy) {
-  const button = form.querySelector('button[type="submit"]');
-  button.disabled = busy;
-  button.textContent = busy
-    ? 'Подождите...'
-    : (form === loginForm ? 'Войти' : 'Зарегистрироваться');
-}
-
-loginForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  clearMessage();
-  if (!validateForm(loginForm)) return;
-
-  setFormBusy(loginForm, true);
-  try {
-    await requestJson('/users/login', Object.fromEntries(new FormData(loginForm)));
-    window.location.assign('/dashboard');
-  } catch (error) {
-    showMessage(error.message, 'error');
-  } finally {
-    setFormBusy(loginForm, false);
-  }
-});
-
-registerForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  clearMessage();
-  if (!validateForm(registerForm)) return;
-
-  const form = Object.fromEntries(new FormData(registerForm));
-  if (form.password !== form.confirm_password) {
-    showMessage('Пароли не совпадают. Проверьте оба поля.', 'error');
-    document.getElementById('confirmPassword').focus();
-    return;
-  }
-
-  delete form.confirm_password;
-  setFormBusy(registerForm, true);
-  try {
-    await requestJson('/users/register', form);
-    registerForm.reset();
-    showForm('login');
-    document.getElementById('login').value = form.username;
-    showMessage('Вы успешно зарегистрированы. Теперь войдите в систему.', 'success');
-    document.getElementById('loginPassword').focus();
-  } catch (error) {
-    showMessage(error.message, 'error');
-  } finally {
-    setFormBusy(registerForm, false);
-  }
-});
-</script>
+</main>
+<script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
 </body>
 </html>

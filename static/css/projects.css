@@ -1,0 +1,76 @@
+.projects-page{max-width:1120px;margin:0 auto;padding:8px 0 28px}
+.projects-intro{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:8px 0 22px}
+.projects-intro h2{font-size:25px;margin:0 0 5px;color:#25344a}
+.projects-intro p,.create-project-heading p{margin:0;color:#718096;font-size:14px}
+.section-hint{margin:4px 0 0;color:#718096;font-size:12px}
+.projects-count{background:#edf2f8;border:1px solid #dce5ef;color:#53647a;border-radius:20px;padding:7px 12px;font-size:13px}
+.create-project-panel,.projects-list-section{background:#fff;border:1px solid #e5eaf0;border-radius:13px;padding:20px 22px;margin-bottom:18px;box-shadow:0 3px 12px #1d2d4008}
+.create-project-heading h3,.projects-list-heading h3{margin:0 0 5px;font-size:17px;color:#29384d}
+.create-project-form{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(220px,1.4fr) auto;gap:10px;margin-top:16px;align-items:center}
+.create-project-form input{width:100%;max-width:none;margin:0;min-width:0}
+.project-message{font-size:13px;color:#52657e;margin:8px 0 0}
+.projects-list-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
+.project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.discoverable-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) minmax(190px,260px) auto;align-items:end;gap:12px;margin:14px 0 16px;padding:13px;background:#f7f9fc;border:1px solid #e5ebf2;border-radius:10px}
+.discoverable-toolbar label{display:block;font-size:12px;font-weight:600;color:#536176;margin-bottom:6px}
+.discoverable-toolbar input,.discoverable-toolbar select{width:100%;max-width:none;margin:0;min-width:0}
+.discoverable-result-count{font-size:12px;color:#718096;padding:10px 2px;white-space:nowrap}
+.project-card{border:1px solid #e1e7ef;background:#fbfcfe;border-radius:11px;padding:17px;min-width:0}
+.project-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.project-card h4{font-size:17px;color:#26364c;margin:0 0 7px;overflow-wrap:anywhere}
+.project-role{font-size:11px;font-weight:600;color:#526b8b;background:#eaf0f7;border-radius:20px;padding:5px 9px;white-space:nowrap}
+.project-description{font-size:13px;line-height:1.5;color:#68778b;min-height:38px;margin:3px 0 13px;overflow-wrap:anywhere}
+.project-owner{font-size:12px;color:#738196;border-top:1px solid #e8edf3;padding-top:11px}
+.project-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.project-card-actions .btn{font-size:12px;padding:8px 11px}
+.project-empty,.projects-loading{grid-column:1/-1;color:#718096;text-align:center;padding:28px 12px;background:#f8fafc;border:1px dashed #d7e0ea;border-radius:10px}
+.modal-backdrop[hidden]{display:none}.modal-backdrop{position:fixed;inset:0;z-index:3000;background:#101b2c99;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-dialog{background:#fff;width:min(500px,100%);border-radius:14px;padding:23px;box-shadow:0 20px 60px #0004}
+.modal-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.modal-heading h3{margin:0}
+.icon-close{border:0;background:#edf1f6;border-radius:8px;width:34px;height:34px;font-size:22px;cursor:pointer}
+.modal-dialog label{display:block;margin:12px 0 6px;font-size:13px;font-weight:600;color:#536176}
+.modal-dialog input,.modal-dialog textarea{width:100%;max-width:none}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+@media(max-width:720px){.create-project-form{grid-template-columns:1fr}.project-grid{grid-template-columns:1fr}.projects-intro{align-items:flex-start}.discoverable-toolbar{grid-template-columns:1fr}.discoverable-result-count{padding:0}}
+
+.projects-intro > div { text-align:center;flex:1; }
+.project-card-top { align-items:center;justify-content:center;flex-direction:column;text-align:center; }
+.project-card h4,.project-description,.project-owner { text-align:center; }
+.project-card-actions { justify-content:center; }
+html[data-theme="dark"] .projects-intro h2,html[data-theme="dark"] .create-project-heading h3,
+html[data-theme="dark"] .projects-list-heading h3 { color:#edf7ff!important; }
+html[data-theme="dark"] .projects-intro p,html[data-theme="dark"] .create-project-heading p,
+html[data-theme="dark"] .section-hint { color:#b6cce0!important; }
+html[data-theme="dark"] .projects-count { background:#183b59;color:#e0effc;border-color:#345c7b; }
+html[data-theme="dark"] .discoverable-toolbar { background:#102d49;border-color:#345c7b; }
+html[data-theme="dark"] .discoverable-toolbar label,html[data-theme="dark"] .modal-dialog label { color:#c0d4e6; }
+html[data-theme="dark"] .project-role { color:#dceeff;background:#254967; }
+html[data-theme="dark"] .project-owner { border-color:#345c7b; }
+@media(max-width:720px) { .projects-intro > div { width:100%; } }
+
+
+/* Projects page hierarchy and consistent right-aligned refresh controls. */
+.projects-intro.panel {
+  position:relative;display:flex;align-items:center;justify-content:center;
+  min-height:112px;padding:20px 150px!important;margin:0 0 22px!important;
+  text-align:center;
+}
+.projects-intro-copy { width:100%;text-align:center!important; }
+.projects-intro-copy h2 { margin:0 0 7px!important;text-align:center!important; }
+.projects-intro-copy p { margin:0!important;text-align:center!important; }
+.projects-intro .projects-count {
+  position:absolute;right:22px;top:50%;transform:translateY(-50%);
+}
+.projects-list-heading {
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:16px!important;width:100%;
+}
+.projects-list-heading > h3,
+.projects-list-heading > div:first-child { margin-right:auto; }
+.projects-list-heading > button { margin-left:auto!important;flex:0 0 auto; }
+.projects-list-heading .section-hint { display:none!important; }
+@media(max-width:620px) {
+ .projects-intro.panel { min-height:125px;padding:18px 14px 48px!important; }
+ .projects-intro .projects-count { top:auto;bottom:12px;right:50%;transform:translateX(50%); }
+ .projects-list-heading { align-items:center!important; }
+}
