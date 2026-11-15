@@ -1,0 +1,125 @@
+.section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.member-heading-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.participant-list,.invitation-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px}
+.join-request-card{background:#f8fafc;border:1px solid #dce5ef;border-radius:10px;padding:15px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.join-request-card p{margin:5px 0;color:#66758a;font-size:13px}.join-request-actions{display:flex;gap:8px;flex-wrap:wrap}
+.participant-card,.invitation-card{background:#f3f6fa;border:1px solid #e1e7ef;border-radius:10px;padding:15px}
+.participant-card h3,.invitation-card h3{margin:0 0 7px;font-size:15px}
+.participant-card p,.invitation-card p{margin:5px 0;color:#5c6879;overflow-wrap:anywhere}
+.member-actions,.invite-actions{display:flex;gap:8px;margin-top:12px}
+.modal-backdrop[hidden]{display:none}.modal-backdrop{position:fixed;inset:0;z-index:3000;background:#101b2c99;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-dialog{background:white;width:min(480px,100%);border-radius:14px;padding:24px;box-shadow:0 20px 60px #0004}
+.modal-heading{display:flex;justify-content:space-between;align-items:center}.modal-heading h2{margin:0}
+.icon-close{border:0;background:#edf1f6;border-radius:8px;width:34px;height:34px;font-size:22px;cursor:pointer}
+.modal-dialog select{max-width:none;width:100%}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+
+html[data-theme="dark"] .participant-card,html[data-theme="dark"] .invitation-card,
+html[data-theme="dark"] .join-request-card { background:#14324d;border-color:#315675;color:#e8f3ff; }
+html[data-theme="dark"] .participant-card h3,html[data-theme="dark"] .invitation-card h3 { color:#f0f7ff; }
+html[data-theme="dark"] .participant-card p,html[data-theme="dark"] .invitation-card p,
+html[data-theme="dark"] .join-request-card p { color:#b8cde0; }
+html[data-theme="dark"] .modal-dialog { background:#102b45;color:#eaf5ff;border:1px solid #315675; }
+html[data-theme="dark"] .modal-dialog h2,html[data-theme="dark"] .modal-dialog h3 { color:#f0f7ff; }
+html[data-theme="dark"] .modal-dialog label { color:#b8cde0; }
+html[data-theme="dark"] .modal-dialog input,html[data-theme="dark"] .modal-dialog select { background:#091f34;color:#eaf5ff;border-color:#345a78; }
+
+
+/* Participants page layout: centered project selector, left headings, right actions. */
+.users-intro-panel {
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  text-align:center!important;
+  gap:14px!important;
+  padding:28px 24px!important;
+}
+.users-intro-copy { width:100%;text-align:center!important; }
+.users-intro-copy h2,.users-intro-copy p { text-align:center!important;margin-left:auto!important;margin-right:auto!important; }
+.users-project-picker {
+  width:min(520px,100%)!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  text-align:left!important;
+  margin:0 auto!important;
+}
+.users-project-picker label { text-align:left!important; }
+.users-project-picker select { width:100%!important;max-width:none!important; }
+#memberMessage { width:100%;text-align:center!important; }
+.users-section-heading {
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  text-align:left!important;
+}
+.users-section-heading > h2 { margin:0!important;text-align:left!important; }
+.users-section-heading .member-heading-actions { margin-left:auto!important;justify-content:flex-end!important; }
+#joinRequestsPanel .section-heading,
+#outgoingPanel .section-heading {
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+}
+.participant-card,.invitation-card,.join-request-card {
+  text-align:center!important;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.participant-card h3,.participant-card p,.invitation-card h3,.invitation-card p { text-align:center!important;width:100%; }
+.member-actions,.invite-actions,.join-request-actions { justify-content:center!important; }
+@media(max-width:600px) {
+ .users-intro-panel { padding:22px 16px!important; }
+ .users-section-heading { align-items:center!important; }
+ .users-section-heading .member-heading-actions { flex:0 0 auto; }
+}
+
+
+/* Team heading: title at the left edge, invite/refresh controls at the right edge. */
+main .panel .users-section-heading {
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  width:100%!important;
+  gap:16px!important;
+  text-align:left!important;
+}
+main .panel .users-section-heading > h2 {
+  flex:1 1 auto!important;
+  margin:0!important;
+  text-align:left!important;
+}
+main .panel .users-section-heading > .member-heading-actions {
+  flex:0 0 auto!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  margin-left:auto!important;
+}
+@media(max-width:520px) {
+  main .panel .users-section-heading { flex-wrap:wrap!important; }
+  main .panel .users-section-heading > .member-heading-actions { margin-left:auto!important; }
+}
+
+
+/* All invitation panels use the same left-title/right-actions header grid. */
+main .panel .section-heading {
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  width:100%!important;
+  gap:16px!important;
+  text-align:left!important;
+}
+main .panel .section-heading > h2,
+main .panel .section-heading > div:first-child > h2 {
+  flex:1 1 auto!important;
+  margin:0!important;
+  text-align:left!important;
+}
+main .panel .section-heading > .member-heading-actions,
+main .panel .section-heading > button {
+  flex:0 0 auto!important;
+  margin-left:auto!important;
+}
+#joinRequestsPanel .section-heading > h2,
+#outgoingPanel .section-heading > h2 { text-align:left!important; }

@@ -1,0 +1,634 @@
+/* PROJECTHUB — authentication page
+   Deep-blue visual identity. No orange accent colors. */
+
+:root {
+  --navy-980: #030d1b;
+  --navy-950: #06152a;
+  --navy-900: #0a203b;
+  --navy-850: #0d2a4b;
+  --blue-800: #123b67;
+  --blue-700: #1b568b;
+  --blue-600: #2875b4;
+  --blue-500: #438fc9;
+  --blue-300: #9bc9ec;
+  --blue-100: #eaf4fc;
+  --ink: #1c2b3b;
+  --muted: #718196;
+  --line: #dce6ef;
+  --white: #ffffff;
+  --surface: rgba(255,255,255,.95);
+  --accent: #2469a5;
+  --accent-hover: #174f83;
+  --focus: rgba(48,124,185,.18);
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; }
+body {
+  font-family: "TikTok Sans", "Segoe UI", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--navy-980);
+}
+
+.auth-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(22px, 5vh, 52px) 16px;
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(55,126,190,.34), transparent 36%),
+    radial-gradient(ellipse at 86% 80%, rgba(34,95,153,.26), transparent 40%),
+    linear-gradient(145deg, #06152a 0%, #0a2341 48%, #041326 100%);
+}
+
+/* Animated technology background: layered blue circuitry and hexagonal nodes. */
+.wave-scene {
+  position:absolute; inset:0; z-index:-1; overflow:hidden; pointer-events:none;
+  background:
+    radial-gradient(ellipse at 18% 18%,rgba(73,145,218,.30),transparent 34%),
+    radial-gradient(ellipse at 82% 78%,rgba(34,103,176,.28),transparent 38%),
+    linear-gradient(135deg,#06152b 0%,#0b2850 48%,#041326 100%);
+}
+.wave-scene::before {
+  content:""; position:absolute; inset:-12%; opacity:.55;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='148' viewBox='0 0 170 148'%3E%3Cg fill='none' stroke='%237bb9ee' stroke-opacity='.34' stroke-width='1'%3E%3Cpath d='M42 2 78 23v42L42 86 6 65V23zM128 65l36 21v42l-36 21-36-21V86zM128 -19l36 21v42l-36 21-36-21V2z'/%3E%3Cpath d='M78 44h18l12 12v10M42 86v17l-12 12M128 65V48l12-12'/%3E%3C/g%3E%3Ccircle cx='78' cy='44' r='2' fill='%239bd0fa' fill-opacity='.8'/%3E%3Ccircle cx='30' cy='115' r='2' fill='%239bd0fa' fill-opacity='.8'/%3E%3C/svg%3E");
+  background-size:170px 148px; animation:circuit-drift 24s linear infinite;
+  mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);
+}
+.wave-scene::after {
+  content:""; position:absolute; inset:0; opacity:.7;
+  background:repeating-linear-gradient(118deg,transparent 0 90px,rgba(116,184,239,.06) 91px,transparent 93px 180px),
+    radial-gradient(circle at 72% 25%,rgba(120,190,245,.24),transparent 2px),
+    radial-gradient(circle at 24% 72%,rgba(120,190,245,.2),transparent 3px);
+  animation:tech-glow 9s ease-in-out infinite;
+}
+.wave { position:absolute; display:block; border:1px solid rgba(125,190,242,.23); transform:rotate(30deg); }
+.wave-back { width:230px;height:200px;left:8%;top:13%;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);background:linear-gradient(135deg,rgba(75,145,211,.18),transparent);animation:hex-float 9s ease-in-out infinite; }
+.wave-middle { width:170px;height:148px;right:11%;top:18%;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);background:rgba(83,155,222,.10);animation:hex-float 11s ease-in-out infinite reverse; }
+.wave-front { width:270px;height:235px;right:7%;bottom:7%;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);background:rgba(65,133,202,.09);animation:hex-float 13s ease-in-out infinite; }
+.wave-glow {position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(116,187,242,.09) 50%,transparent 70%);transform:translateX(-100%);animation:scan-line 9s ease-in-out infinite;}
+.wave-grain {position:absolute;inset:0;opacity:.09;background-image:radial-gradient(rgba(190,222,250,.8) .7px,transparent .8px);background-size:5px 5px;}
+@keyframes circuit-drift {to{background-position:170px 148px;}}
+@keyframes tech-glow {0%,100%{opacity:.38}50%{opacity:.85}}
+@keyframes hex-float {0%,100%{translate:0 0;filter:drop-shadow(0 0 8px rgba(73,145,218,.12))}50%{translate:0 -16px;filter:drop-shadow(0 0 24px rgba(73,145,218,.32))}}
+@keyframes scan-line {0%,15%{transform:translateX(-100%)}70%,100%{transform:translateX(100%)}}
+@media(prefers-reduced-motion:reduce){.wave-scene *, .auth{animation:none!important;transition:none!important}}
+
+.auth {
+  position: relative;
+  z-index: 2;
+  width: min(440px, 100%);
+  padding: clamp(28px, 4vw, 42px);
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 25px;
+  background: var(--surface);
+  box-shadow: 0 28px 82px rgba(0,8,20,.36), 0 5px 18px rgba(5,28,52,.14);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  animation: auth-enter .65s cubic-bezier(.2,.75,.25,1) both;
+}
+@keyframes auth-enter {
+  from { opacity: 0; transform: translateY(14px) scale(.988); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.auth-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 13px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 17px;
+  color: #fff;
+  background: linear-gradient(145deg, #3c85bf, #164e80);
+  box-shadow: 0 9px 24px rgba(22,78,128,.26), inset 0 1px 0 rgba(255,255,255,.22);
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: .04em;
+}
+.auth-kicker {
+  margin: 0 0 7px;
+  color: #47749a;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+.auth h1 {
+  margin: 0;
+  color: #1c2b3b;
+  text-align: center;
+  font-size: clamp(25px, 3vw, 30px);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+.subtitle {
+  margin: 9px 0 25px;
+  color: #718196;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.tabs {
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  margin-bottom: 22px;
+  border: 1px solid #e1e9f0;
+  border-radius: 13px;
+  background: #edf3f8;
+}
+.tabs button {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #697b8e;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.tabs button:hover { color: #263e56; background: rgba(255,255,255,.78); }
+.tabs button:active { transform: scale(.985); }
+.tabs button.active {
+  color: #fff;
+  background: linear-gradient(105deg, #2875b4, #164e80);
+  box-shadow: 0 5px 14px rgba(22,78,128,.22);
+}
+.auth label {
+  display: block;
+  margin: 13px 0 7px;
+  color: #34485c;
+  font-size: 13px;
+  font-weight: 700;
+}
+.auth input {
+  display: block;
+  width: 100%;
+  min-height: 47px;
+  padding: 12px 14px;
+  border: 1px solid #d6e0e9;
+  border-radius: 11px;
+  outline: none;
+  background: #f9fbfd;
+  color: #25384b;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.auth input::placeholder { color: #9aa8b6; }
+.auth input:hover { border-color: #afc4d7; }
+.auth input:focus {
+  border-color: #397fb6;
+  background: #fff;
+  box-shadow: 0 0 0 4px var(--focus);
+}
+.submit {
+  width: 100%;
+  min-height: 49px;
+  margin-top: 22px;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(105deg, #2875b4, #164e80);
+  box-shadow: 0 9px 20px rgba(22,78,128,.22);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+.submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 13px 25px rgba(22,78,128,.28);
+  filter: brightness(1.04);
+}
+.submit:active { transform: translateY(0) scale(.99); }
+.submit:disabled { opacity: .65; cursor: wait; transform: none; }
+.message {
+  display: none;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  line-height: 1.45;
+  text-align: left;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.message.show { display: block; }
+.message.error { color: #922b35; background: #fdebed; border: 1px solid #f2c2c8; }
+.message.success { color: #246b4b; background: #e8f6ef; border: 1px solid #bfe5d0; }
+.hidden { display: none !important; }
+
+@media (max-width: 480px) {
+  .auth-page { padding: 18px 14px; }
+  .auth { width: min(100%, 420px); padding: 28px 22px; border-radius: 21px; }
+  .subtitle { margin-bottom: 21px; }
+}
+@media (max-height: 720px) and (min-width: 600px) {
+  .auth-page { padding-block: 18px; }
+  .auth { padding-block: 25px; }
+  .auth-mark { width: 46px; height: 46px; margin-bottom: 9px; }
+  .subtitle { margin-bottom: 17px; }
+  .auth label { margin-top: 10px; }
+  .submit { margin-top: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wave, .wave-glow, .auth { animation: none !important; }
+  .tabs button, .auth input, .submit { transition: none !important; }
+}
+
+
+/* === Theme system: contrasting light and dark blue auth surfaces === */
+:root {
+  color-scheme: light;
+}
+html[data-theme="light"] {
+  --auth-card-bg: rgba(255,255,255,.965);
+  --auth-card-border: rgba(255,255,255,.92);
+  --auth-card-shadow: 0 28px 82px rgba(0,22,48,.30), 0 5px 18px rgba(5,28,52,.12);
+  --auth-heading: #1c2b3b;
+  --auth-muted: #718196;
+  --auth-label: #34485c;
+  --auth-input-bg: #f9fbfd;
+  --auth-input-text: #25384b;
+  --auth-input-border: #d6e0e9;
+  --auth-tab-bg: #edf3f8;
+  --auth-tab-text: #697b8e;
+  --auth-toggle-bg: rgba(255,255,255,.94);
+  --auth-toggle-text: #173b5e;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --auth-card-bg: rgba(10,29,51,.94);
+  --auth-card-border: rgba(150,194,230,.28);
+  --auth-card-shadow: 0 30px 88px rgba(0,0,0,.48), 0 5px 20px rgba(0,0,0,.24);
+  --auth-heading: #f0f6fc;
+  --auth-muted: #b5c8d9;
+  --auth-label: #d8e6f2;
+  --auth-input-bg: #102b49;
+  --auth-input-text: #edf6ff;
+  --auth-input-border: #315474;
+  --auth-tab-bg: #102b49;
+  --auth-tab-text: #b4c9dc;
+  --auth-toggle-bg: rgba(8,27,49,.94);
+  --auth-toggle-text: #eaf4fc;
+}
+html[data-theme="light"] .auth-page {
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(116,190,239,.36), transparent 37%),
+    radial-gradient(ellipse at 86% 80%, rgba(53,133,196,.30), transparent 42%),
+    linear-gradient(145deg, #8fc8ee 0%, #5da5d8 48%, #9acdec 100%);
+}
+html[data-theme="dark"] .auth-page {
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(55,126,190,.34), transparent 36%),
+    radial-gradient(ellipse at 86% 80%, rgba(34,95,153,.26), transparent 40%),
+    linear-gradient(145deg, #06152a 0%, #0a2341 48%, #041326 100%);
+}
+.auth {
+  background: var(--auth-card-bg) !important;
+  border-color: var(--auth-card-border) !important;
+  box-shadow: var(--auth-card-shadow) !important;
+  color: var(--auth-heading);
+  transition: background-color .28s ease, border-color .28s ease, box-shadow .28s ease;
+}
+.auth h1 { color: var(--auth-heading) !important; }
+.auth .subtitle { color: var(--auth-muted) !important; }
+.auth .auth-kicker { color: #5e8bb2 !important; }
+html[data-theme="dark"] .auth .auth-kicker { color: #9bc9ec !important; }
+.auth label { color: var(--auth-label) !important; }
+.auth input {
+  color: var(--auth-input-text) !important;
+  background: var(--auth-input-bg) !important;
+  border-color: var(--auth-input-border) !important;
+}
+.auth input::placeholder { color: #91a6b8 !important; }
+html[data-theme="dark"] .auth input::placeholder { color: #91a9bf !important; }
+.auth input:focus {
+  border-color: #438fc9 !important;
+  box-shadow: 0 0 0 4px rgba(67,143,201,.20) !important;
+}
+.auth .tabs {
+  background: var(--auth-tab-bg) !important;
+  border-color: var(--auth-input-border) !important;
+}
+.auth .tabs button { color: var(--auth-tab-text) !important; }
+.auth .tabs button.active {
+  color: #fff !important;
+  background: linear-gradient(110deg, #347fb9, #174f80) !important;
+}
+html[data-theme="dark"] .auth .message.error {
+  color: #ffd8dc;
+  background: #512b37;
+  border-color: #824653;
+}
+html[data-theme="dark"] .auth .message.success {
+  color: #c8f4dc;
+  background: #183f36;
+  border-color: #2b6b58;
+}
+
+/* Fixed-position theme control does not participate in layout, so it never
+   pushes the card or changes its alignment at different viewport widths. */
+.theme-toggle {
+  position: fixed;
+  z-index: 20;
+  top: clamp(12px, 2.4vh, 22px);
+  right: clamp(12px, 2.4vw, 24px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 154px;
+  min-height: 46px;
+  padding: 9px 15px;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 14px;
+  background: var(--auth-toggle-bg);
+  color: var(--auth-toggle-text);
+  box-shadow: 0 8px 24px rgba(0,17,37,.16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .22s ease, color .22s ease, box-shadow .22s ease, transform .22s ease;
+}
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 28px rgba(0,17,37,.22);
+}
+.theme-toggle:active { transform: translateY(0) scale(.98); }
+.theme-toggle:focus-visible {
+  outline: 3px solid rgba(194,225,249,.9);
+  outline-offset: 3px;
+}
+.theme-toggle-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 27px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #e5f1fb;
+  color: #1e5c91;
+  font-size: 17px;
+  line-height: 1;
+}
+html[data-theme="dark"] .theme-toggle {
+  border-color: rgba(142,190,229,.25);
+  box-shadow: 0 8px 26px rgba(0,0,0,.28);
+}
+html[data-theme="dark"] .theme-toggle-icon {
+  color: #f4d98b;
+  background: #254665;
+}
+
+/* Keep the card centered and its width predictable on desktop and mobile.
+   The theme switch is fixed separately and never changes the card's geometry. */
+.auth-page {
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding: 76px 16px 28px;
+}
+.auth {
+  width: min(440px, calc(100vw - 32px));
+  max-width: 440px;
+  margin-inline: auto;
+}
+@media (min-width: 700px) {
+  .auth-page { padding-top: 76px; padding-bottom: 36px; }
+  .auth { width: min(440px, 42vw); }
+}
+@media (max-width: 699px) {
+  .auth-page {
+    padding: 76px 14px 24px;
+    place-items: center;
+  }
+  .auth { width: min(100%, 440px); padding: 28px 22px; }
+  .theme-toggle {
+    top: 12px;
+    right: 12px;
+    min-width: 142px;
+    min-height: 42px;
+    padding: 7px 11px;
+    border-radius: 12px;
+    gap: 8px;
+  }
+}
+@media (max-width: 360px) {
+  .auth { padding: 24px 18px; }
+  .theme-toggle { min-width: 134px; font-size: 12px; }
+}
+@media (max-height: 700px) and (min-width: 700px) {
+  .auth-page { padding-top: 66px; padding-bottom: 16px; }
+  .auth { padding-block: 24px; }
+  .auth-mark { width: 46px; height: 46px; margin-bottom: 8px; }
+  .auth .subtitle { margin-bottom: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle, .auth { transition: none !important; }
+}
+
+
+/* Supplied PROJECTHUB mark */
+.auth-brand-logo { width:158px;height:116px;margin:0 auto 8px;display:grid;place-items:center;overflow:visible;background:transparent!important;border:0!important;box-shadow:none!important; }
+.auth-brand-logo img { grid-area:1/1;display:block;width:100%;height:100%;object-fit:contain;object-position:center;background:transparent!important;border:0!important;box-shadow:none!important;filter:drop-shadow(0 2px 5px rgba(25,130,200,.13)); }
+html[data-theme="light"] .auth-page { background:linear-gradient(145deg,#dbeaf8 0%,#b9d4ec 48%,#e6f0f8 100%); }
+html[data-theme="dark"] .auth-page { background:linear-gradient(145deg,#030d1b 0%,#0a2341 48%,#041326 100%); }
+
+
+/* PROJECTHUB theme-specific app marks and TikTok Sans typography. */
+html,body,button,input,textarea,select,option,
+h1,h2,h3,h4,p,a,label,small,strong,span,div {
+  font-family:"TikTok Sans",sans-serif!important;
+}
+.auth-brand-logo { width:116px;height:116px;margin:0 auto 10px;display:grid;place-items:center;overflow:visible; }
+.auth-brand-logo img { grid-area:1/1;width:100%;height:100%;object-fit:contain; }
+.auth-logo-dark { display:none; }
+html[data-theme="dark"] .auth-logo-light { display:none; }
+html[data-theme="dark"] .auth-logo-dark { display:block; }
+@media(max-width:699px) {
+  .auth-brand-logo { width:138px;height:102px; }
+}
+
+html[data-theme="dark"] .auth-brand-logo img { filter:drop-shadow(0 2px 7px rgba(0,185,255,.20)); }
+
+
+/* Brand mark is transparent and visually integrated into the auth card. */
+.auth-brand-logo {
+  width:132px!important;
+  height:94px!important;
+  margin:0 auto 10px!important;
+  overflow:visible!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.auth-brand-logo img {
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+html[data-theme="light"] .auth-logo-light {
+  mix-blend-mode:multiply;
+  filter:drop-shadow(0 2px 5px rgba(22,91,145,.10))!important;
+}
+html[data-theme="dark"] .auth-logo-dark {
+  mix-blend-mode:screen;
+  filter:drop-shadow(0 2px 7px rgba(0,185,255,.17))!important;
+}
+@media(max-width:699px) {
+  .auth-brand-logo { width:120px!important;height:86px!important; }
+}
+
+
+/* FINAL AUTH BRAND RULES — one clean logo, no baked-in tile or backdrop. */
+.auth-brand-logo {
+  display:grid!important;
+  place-items:center!important;
+  width:150px!important;
+  height:104px!important;
+  margin:0 auto 8px!important;
+  padding:0!important;
+  overflow:visible!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.auth-brand-logo img {
+  grid-area:1 / 1!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  padding:0!important;
+  margin:0!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+html[data-theme="light"] .auth-brand-logo .auth-logo-light { display:block!important; }
+html[data-theme="light"] .auth-brand-logo .auth-logo-dark { display:none!important; }
+html[data-theme="dark"] .auth-brand-logo .auth-logo-light { display:none!important; }
+html[data-theme="dark"] .auth-brand-logo .auth-logo-dark { display:block!important; }
+html[data-theme="light"] .auth-brand-logo .auth-logo-light {
+  mix-blend-mode:normal!important;
+  filter:drop-shadow(0 2px 4px rgba(17,65,105,.10))!important;
+}
+html[data-theme="dark"] .auth-brand-logo .auth-logo-dark {
+  mix-blend-mode:normal!important;
+  filter:drop-shadow(0 2px 6px rgba(0,174,255,.16))!important;
+}
+@media(max-width:699px) {
+  .auth-brand-logo { width:138px!important;height:96px!important; }
+}
+
+
+/* PROJECTHUB FINAL AUTH THEME — match the light/dark application backdrop.
+   The authentication page has its own .wave-scene, so mirror the shared app
+   background here rather than leaving the old flat gradient in place. */
+html[data-theme="light"] body {
+  background:#e5f0f8!important;
+}
+html[data-theme="light"] .auth-page {
+  background:
+    radial-gradient(ellipse at 12% 8%,rgba(92,170,222,.20),transparent 36%),
+    radial-gradient(ellipse at 88% 78%,rgba(68,139,201,.16),transparent 40%),
+    linear-gradient(135deg,#e9f3fa 0%,#deedf8 52%,#f1f6fb 100%)!important;
+}
+html[data-theme="light"] .wave-scene {
+  background:
+    radial-gradient(ellipse at 12% 8%,rgba(92,170,222,.20),transparent 36%),
+    radial-gradient(ellipse at 88% 78%,rgba(68,139,201,.16),transparent 40%),
+    linear-gradient(135deg,#e9f3fa 0%,#deedf8 52%,#f1f6fb 100%)!important;
+}
+html[data-theme="light"] .wave-scene::before {
+  inset:-8%!important;
+  opacity:.48!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='130' viewBox='0 0 150 130'%3E%3Cg fill='none' stroke='%233e82b4' stroke-width='1' stroke-opacity='.34'%3E%3Cpath d='M37 2 70 21v38L37 78 4 59V21zM112 52l33 19v38l-33 19-33-19V71zM112 -24l33 19v38l-33 19-33-19V-5z'/%3E%3Cpath d='M70 40h15l10 10v9M37 78v15l-10 10M112 52V37l10-10'/%3E%3C/g%3E%3C/svg%3E")!important;
+  background-size:150px 130px!important;
+  background-position:0 0;
+  animation:circuit-drift 24s linear infinite!important;
+  mask-image:none!important;
+}
+html[data-theme="light"] .wave-scene::after {
+  opacity:.46!important;
+  background:
+    repeating-linear-gradient(118deg,transparent 0 90px,rgba(61,129,180,.035) 91px,transparent 93px 180px),
+    radial-gradient(circle at 72% 25%,rgba(70,145,198,.22),transparent 2px),
+    radial-gradient(circle at 24% 72%,rgba(70,145,198,.18),transparent 3px)!important;
+  animation:tech-glow 9s ease-in-out infinite!important;
+}
+html[data-theme="light"] .wave {
+  border-color:rgba(65,133,183,.20)!important;
+  background:linear-gradient(135deg,rgba(104,174,220,.12),rgba(255,255,255,0))!important;
+}
+html[data-theme="light"] .wave-glow {
+  background:linear-gradient(110deg,transparent 30%,rgba(76,151,202,.10) 50%,transparent 70%)!important;
+}
+html[data-theme="dark"] .auth-page,
+html[data-theme="dark"] .wave-scene {
+  background:
+    radial-gradient(ellipse at 18% 18%,rgba(73,145,218,.30),transparent 34%),
+    radial-gradient(ellipse at 82% 78%,rgba(34,103,176,.28),transparent 38%),
+    linear-gradient(135deg,#06152b 0%,#0b2850 48%,#041326 100%)!important;
+}
+html[data-theme="dark"] .wave-scene::before {
+  opacity:.55!important;
+}
+@media(prefers-reduced-motion:reduce) {
+  .wave-scene::before,.wave-scene::after,.wave,.wave-glow {
+    animation:none!important;
+  }
+}
+
+
+/* FINAL COLOR MATCH: light auth backdrop follows the supplied PROJECTHUB sample. */
+html[data-theme="light"] body {
+  background:#79b9e6!important;
+}
+html[data-theme="light"] .auth-page,
+html[data-theme="light"] .wave-scene {
+  background:
+    radial-gradient(ellipse at 18% 14%,rgba(154,207,241,.20),transparent 38%),
+    radial-gradient(ellipse at 84% 82%,rgba(79,157,211,.12),transparent 42%),
+    linear-gradient(155deg,#7dbce7 0%,#78b8e4 46%,#70b3e1 100%)!important;
+}
+html[data-theme="light"] .wave-scene::before {
+  opacity:.62!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='130' viewBox='0 0 150 130'%3E%3Cg fill='none' stroke='%233e82b4' stroke-width='1' stroke-opacity='.30'%3E%3Cpath d='M37 2 70 21v38L37 78 4 59V21zM112 52l33 19v38l-33 19-33-19V71zM112 -24l33 19v38l-33 19-33-19V-5z'/%3E%3Cpath d='M70 40h15l10 10v9M37 78v15l-10 10M112 52V37l10-10'/%3E%3C/g%3E%3C/svg%3E")!important;
+  background-size:150px 130px!important;
+}
+html[data-theme="light"] .wave-scene::after {
+  opacity:.30!important;
+  background:repeating-linear-gradient(118deg,transparent 0 90px,rgba(45,119,174,.035) 91px,transparent 93px 180px)!important;
+}
+html[data-theme="light"] .wave {
+  border-color:rgba(48,125,181,.16)!important;
+  background:linear-gradient(135deg,rgba(255,255,255,.06),transparent)!important;
+}
+html[data-theme="light"] .wave-glow {
+  background:linear-gradient(110deg,transparent 30%,rgba(218,239,252,.10) 50%,transparent 70%)!important;
+}

@@ -1,0 +1,62 @@
+
+.task-create-page { width:min(100%,860px);margin:28px auto 44px; }
+.task-create-card { position:relative;overflow:hidden;width:100%;padding:0!important;border-radius:18px!important; }
+.task-create-card::before { content:"";display:block;height:5px;background:linear-gradient(90deg,#1768a8,#19baf1,#1768a8); }
+.task-create-heading { text-align:center;padding:27px 28px 22px;margin:0 0 22px;border-bottom:1px solid rgba(103,151,190,.25); }
+.task-form-eyebrow { display:block;color:#3988bd;font-size:10px;font-weight:850;letter-spacing:.16em;margin-bottom:9px; }
+.task-create-heading h2 { margin:0 0 7px;font-size:26px;font-weight:850;color:#193b59; }
+.task-create-heading p { margin:0;color:#6a8298;font-size:14px; }
+.task-create-form { width:min(100% - 48px,650px);margin:0 auto 22px;display:grid;grid-template-columns:1fr 1fr;gap:13px 16px; }
+.task-form-field { min-width:0; }
+.task-form-field-wide { grid-column:1/-1; }
+.task-create-form label { display:block;font-size:13px;font-weight:750;color:#49647c;margin:0 0 7px; }
+.task-create-form input,.task-create-form textarea,.task-create-form select {
+  display:block;width:100%;max-width:none;min-height:45px;margin:0;padding:11px 13px;
+  border:1px solid #c8d9e7;border-radius:10px;background:#fbfdff;color:#1d3852;
+  box-sizing:border-box;font-size:14px;
+}
+.task-create-form textarea { min-height:116px;resize:vertical; }
+.task-create-form input:focus,.task-create-form textarea:focus,.task-create-form select:focus {
+  outline:none;border-color:#379bd4;box-shadow:0 0 0 3px rgba(55,155,212,.14);
+}
+.task-create-actions { grid-column:1/-1;display:flex;justify-content:center;align-items:center;gap:11px;flex-wrap:wrap;margin-top:7px; }
+.task-create-actions .btn { min-width:170px;min-height:43px;display:inline-flex;align-items:center;justify-content:center;text-align:center; }
+.task-form-message { width:min(100% - 48px,650px);margin:0 auto 22px;text-align:center; }
+html[data-theme="dark"] .task-create-heading { border-color:rgba(103,164,207,.24); }
+html[data-theme="dark"] .task-form-eyebrow { color:#6bc8f3; }
+html[data-theme="dark"] .task-create-heading h2 { color:#edf7ff!important; }
+html[data-theme="dark"] .task-create-heading p,html[data-theme="dark"] .task-create-form label { color:#b9cfe1!important; }
+html[data-theme="dark"] .task-create-form input,html[data-theme="dark"] .task-create-form textarea,
+html[data-theme="dark"] .task-create-form select { background:#091f34!important;color:#eaf5ff!important;border-color:#345a78!important; }
+html[data-theme="dark"] .task-create-form input::placeholder,html[data-theme="dark"] .task-create-form textarea::placeholder { color:#8daac2; }
+@media(max-width:620px) {
+ .task-create-page { margin:16px auto 28px; }
+ .task-create-heading { padding:22px 16px 18px; }
+ .task-create-heading h2 { font-size:22px; }
+ .task-create-form { width:calc(100% - 32px);grid-template-columns:1fr;gap:12px; }
+ .task-form-field-wide { grid-column:auto; }
+ .task-create-actions { display:grid;grid-template-columns:1fr;width:100%; }
+ .task-create-actions .btn { width:100%;min-width:0; }
+ .task-form-message { width:calc(100% - 32px); }
+}
+
+
+/* Spacious task form: wider card and fields without losing responsive behavior. */
+.task-create-page { width:min(100%,1080px)!important;margin:28px auto 44px!important; }
+.task-create-form { width:min(88%,900px)!important;gap:18px 22px!important;margin-bottom:28px!important; }
+.task-create-heading { padding:30px 32px 24px!important;margin-bottom:26px!important; }
+.task-create-heading h2 { font-size:28px!important; }
+.task-create-form input,.task-create-form select { min-height:49px!important;padding:12px 15px!important; }
+.task-create-form textarea { min-height:145px!important;padding:13px 15px!important; }
+.task-create-form label { margin-bottom:8px!important;font-size:14px!important; }
+.task-create-actions { margin-top:12px!important; }
+.task-form-message { width:min(88%,900px)!important; }
+@media(max-width:760px) {
+ .task-create-page { width:100%!important;margin:16px auto 28px!important; }
+ .task-create-form { width:calc(100% - 36px)!important;grid-template-columns:1fr!important;gap:15px!important; }
+ .task-form-field-wide { grid-column:auto!important; }
+ .task-create-heading { padding:24px 18px 20px!important; }
+ .task-create-heading h2 { font-size:24px!important; }
+ .task-create-form textarea { min-height:130px!important; }
+ .task-form-message { width:calc(100% - 36px)!important; }
+}

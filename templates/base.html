@@ -4,170 +4,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Kanban Board{% endblock %}</title>
-
-  <style>
-    *{box-sizing:border-box}
-    body{margin:0;font:15px Arial,sans-serif;background:#f4f6f9;color:#202938}
-
-    header{background:#202b3c;color:white;padding:18px 5%}
-    header h1{margin:0;font-size:22px}
-
-    nav{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      padding:14px 5%;
-      background:white;
-      border-bottom:1px solid #ddd;
-    }
-
-    nav a,.btn{
-      display:inline-block;
-      padding:9px 14px;
-      border:0;
-      border-radius:6px;
-      background:#315b91;
-      color:white;
-      text-decoration:none;
-      cursor:pointer;
-    }
-
-    nav a:hover,.btn:hover{background:#24466f}
-
-    .user-panel{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin-left:auto;
-    }
-
-    .username{
-      padding:9px 14px; border:0; border-radius:6px;
-      background:#eef2f7; color:#202938; font-weight:bold; cursor:pointer;
-    }
-    .username{padding:9px 14px;border:0;border-radius:6px;background:#eef2f7;color:#202938;font-weight:bold;cursor:pointer}
-    .account-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(12,20,32,.58);z-index:2000;align-items:center;justify-content:center;padding:20px}
-    .account-modal-backdrop.open{display:flex}
-    .account-modal{width:min(460px,100%);max-height:calc(100vh - 40px);overflow-y:auto;background:#fff;color:#202938;border-radius:16px;padding:28px;box-shadow:0 24px 80px #0005;position:relative;text-align:center}
-    .account-modal-header{display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:22px}
-    .account-modal-header h2{margin:0;font-size:23px}
-    .account-close{position:absolute;right:0;top:0;border:0;background:#eef2f7;color:#344054;border-radius:8px;width:34px;height:34px;font-size:21px;cursor:pointer}
-    .account-profile{padding:12px 8px 18px;margin-bottom:20px;border-bottom:1px solid #e5e8ed}
-    .account-profile-row{padding:8px 0;font-size:15px;overflow-wrap:anywhere}
-    .account-profile-label{display:block;color:#687386;font-size:12px;margin-bottom:3px}
-    .account-actions{display:grid;grid-template-columns:1fr;gap:10px}
-    .account-actions .menu-action{width:100%}
-    .transfer-project{padding:12px;margin:10px 0;background:#f3f6fa;border:1px solid #e1e7ef;border-radius:9px}
-    .transfer-project select{width:100%;max-width:none;margin:8px 0}
-    .account-subview form input{width:100%;max-width:none}
-    .account-modal .menu-action{padding:12px 14px;border:0;border-radius:8px;background:#315b91;color:#fff;cursor:pointer;font-weight:600}
-    .account-modal .delete-action{background:#a83c3c}
-    .account-modal .back-action{background:#eef2f7;color:#344054;margin-bottom:12px}
-    .account-subview{display:none;text-align:left}
-    .account-subview.active{display:block}
-    .account-subview h3{text-align:center;margin:0 0 16px;font-size:18px}
-    .account-modal label{display:block;font-size:13px;font-weight:600;margin:10px 0 5px}
-    .account-modal input{max-width:none;margin:5px 0 14px}
-    .account-message{font-size:13px;margin-top:12px;color:#315b91;text-align:center}
-    .account-message.error{color:#a83c3c}
-    body.modal-open{overflow:hidden}
-
-    .logout-btn{
-      background:#a83c3c;
-    }
-
-    .logout-btn:hover{
-      background:#842e2e;
-    }
-
-    main{max-width:1100px;margin:28px auto;padding:0 18px}
-
-    .panel{
-      background:white;
-      padding:20px;
-      border-radius:9px;
-      margin-bottom:18px;
-      box-shadow:0 2px 8px #0000000b
-    }
-
-    input,textarea,select{
-      display:block;
-      width:100%;
-      max-width:520px;
-      padding:10px;
-      margin:7px 0 14px;
-      border:1px solid #cbd2dc;
-      border-radius:5px
-    }
-
-    button{font-size:14px}
-    .muted{color:#687386}
-
-    .status{
-      padding:10px;
-      border-radius:6px;
-      background:#eef2f7;
-      margin:10px 0
-    }
-
-    table{width:100%;border-collapse:collapse}
-
-    td,th{
-      text-align:left;
-      padding:10px;
-      border-bottom:1px solid #e5e8ed
-    }
-
-    .actions{display:flex;gap:8px;flex-wrap:wrap}
-    .danger{background:#a83c3c}
-
-    @media(max-width:650px){
-      .user-panel{
-        width:100%;
-        margin-left:0;
-      }
-    }
-
-
-    .nav-notifications{position:relative;display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:0;border-radius:6px;background:#eef2f7;color:#26364c;font-weight:600;cursor:pointer}
-    .nav-notifications:hover{background:#dfe7f1}
-    .nav-notifications .bell{font-size:16px}
-    .notification-badge{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:20px;background:#b83b3b;color:#fff;font-size:11px;font-weight:700}
-    .notification-badge[hidden]{display:none}
-    .notifications-overlay{display:none;position:fixed;inset:0;z-index:2500;background:rgba(15,24,38,.55);align-items:center;justify-content:center;padding:18px}
-    .notifications-overlay.open{display:flex}
-    .notifications-dialog{width:min(570px,100%);max-height:min(720px,calc(100vh - 36px));overflow:auto;background:#fff;border-radius:15px;padding:22px;box-shadow:0 24px 80px #0005;color:#202938}
-    .notifications-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
-    .notifications-dialog-head h2{font-size:21px;margin:0}
-    .notifications-head-actions{display:flex;align-items:center;gap:8px}
-    .notifications-close{width:34px;height:34px;border:0;border-radius:8px;background:#eef2f7;color:#344054;font-size:21px;cursor:pointer}
-    .notifications-list{display:grid;gap:9px}
-    .notification-row{display:flex;align-items:flex-start;gap:11px;padding:13px;border:1px solid #e3e9f0;border-radius:10px;background:#fff}
-    .notification-row.unread{background:#f2f6fb;border-color:#d5e1ef}
-    .notification-symbol{display:flex;align-items:center;justify-content:center;flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:#eaf0f7;color:#315b91;font-weight:700}
-    .notification-body{flex:1;min-width:0}
-    .notification-body strong{display:block;font-size:14px;margin-bottom:4px}
-    .notification-body p{font-size:13px;line-height:1.45;color:#59677a;margin:0;overflow-wrap:anywhere}
-    .notification-date{font-size:11px;color:#8490a0;margin-top:6px}
-    .notification-mark{border:0;background:transparent;color:#315b91;cursor:pointer;font-size:12px;padding:5px}
-    .notifications-empty{text-align:center;color:#748195;padding:30px 12px;background:#f7f9fc;border:1px dashed #d9e1eb;border-radius:10px}
-    body.notifications-open{overflow:hidden}
-    .notification-toast{position:fixed;right:20px;top:20px;z-index:4000;width:min(360px,calc(100vw - 40px));padding:14px 16px;border-radius:11px;background:#24364d;color:#fff;box-shadow:0 12px 35px #0003;opacity:0;transform:translateY(-10px);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
-    .notification-toast.show{opacity:1;transform:translateY(0)}
-    .notification-toast strong{display:block;margin-bottom:4px;font-size:14px}
-    .notification-toast span{display:block;font-size:13px;line-height:1.4;color:#e1e8f0}
-    @media(max-width:650px){.nav-notifications{width:100%;justify-content:center}.notifications-dialog{padding:17px}.notifications-dialog-head{align-items:flex-start}}
-  </style>
-
-  {% block head %}{% endblock %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap" rel="stylesheet">
+  <title>{% block title %}PROJECTHUB{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% block head %}{% endblock %}
+  {% block page_styles %}{% endblock %}
 </head>
 
 <body>
-
-<header>
-  <h1>Kanban Board</h1>
+<div class="global-wave-scene" aria-hidden="true">
+  <span class="global-wave global-wave-one"></span>
+  <span class="global-wave global-wave-two"></span>
+  <span class="global-hex global-hex-one"></span>
+  <span class="global-hex global-hex-two"></span>
+  <span class="global-hex global-hex-three"></span>
+  <span class="auth-wave-shape auth-wave-back"></span>
+  <span class="auth-wave-shape auth-wave-middle"></span>
+  <span class="auth-wave-shape auth-wave-front"></span>
+  <span class="auth-wave-glow"></span>
+  <span class="auth-wave-grain"></span>
+</div>
+<header class="site-header">
+  <a class="brand" href="/dashboard" aria-label="PROJECTHUB — главная">
+    <img class="brand-mark brand-mark-light" src="{{ url_for('static', filename='img/projecthub-logo-light.png') }}" alt="">
+    <img class="brand-mark brand-mark-dark" src="{{ url_for('static', filename='img/projecthub-logo-dark.png') }}" alt="">
+    <span class="brand-wordmark"><span>PROJECT</span><b>HUB</b></span>
+  </a>
+  <button class="site-theme-toggle" id="siteThemeToggle" type="button" aria-label="Включить тёмную тему" aria-pressed="false">
+    <span class="theme-toggle-icon" aria-hidden="true">☾</span><span class="theme-toggle-label">Тёмная тема</span>
+  </button>
 </header>
 
 <nav>
@@ -188,7 +55,7 @@
       {{ session.get("username", "") }}
     </button>
 
-    <button class="btn logout-btn" type="button" onclick="logout()">
+    <button class="btn logout-btn" type="button" data-action="logout">
       Выйти
     </button>
   </div>
@@ -257,7 +124,7 @@
     </div>
     <div class="account-subview" id="deleteView">
       <button class="menu-action back-action" type="button" data-account-back>← Назад</button>
-      <h3 style="color:#a83c3c">Удаление аккаунта</h3>
+      <h3 class="danger-heading">Удаление аккаунта</h3>
       <p class="muted">Удаление необратимо. Созданные задачи сохранятся, но связь с вашим аккаунтом будет очищена. Перед удалением необходимо передать владение всеми проектами.</p>
       <div id="ownedProjectsBox"></div>
       <label for="deletePassword">Введите пароль для подтверждения</label>
@@ -271,371 +138,7 @@
 <main>
   {% block content %}{% endblock %}
 </main>
-
-<script>
-const accountToggle = document.getElementById("accountToggle");
-const accountBackdrop = document.getElementById("accountModalBackdrop");
-const accountMessage = document.getElementById("accountMessage");
-const accountHome = document.getElementById("accountHome");
-const passwordView = document.getElementById("passwordView");
-const deleteView = document.getElementById("deleteView");
-const profileView = document.getElementById("profileView");
-
-function showAccountHome() {
-  accountHome.style.display = "block";
-  passwordView.classList.remove("active");
-  deleteView.classList.remove("active");
-  profileView.classList.remove("active");
-  accountMessage.textContent = "";
-  accountMessage.className = "account-message";
-  document.getElementById("passwordForm").reset();
-  document.getElementById("deletePassword").value = "";
-  document.getElementById("profileCurrentPassword").value = "";
-}
-function openAccountModal() {
-  showAccountHome();
-  accountBackdrop.classList.add("open");
-  accountBackdrop.setAttribute("aria-hidden", "false");
-  accountToggle.setAttribute("aria-expanded", "true");
-  document.body.classList.add("modal-open");
-  loadAccountInfo();
-}
-function closeAccountModal() {
-  accountBackdrop.classList.remove("open");
-  accountBackdrop.setAttribute("aria-hidden", "true");
-  accountToggle.setAttribute("aria-expanded", "false");
-  document.body.classList.remove("modal-open");
-}
-function showAccountSubview(view) {
-  accountHome.style.display = "none";
-  passwordView.classList.toggle("active", view === "password");
-  deleteView.classList.toggle("active", view === "delete");
-  profileView.classList.toggle("active", view === "profile");
-  accountMessage.textContent = "";
-  accountMessage.className = "account-message";
-}
-accountToggle?.addEventListener("click", openAccountModal);
-document.getElementById("accountClose")?.addEventListener("click", closeAccountModal);
-document.querySelectorAll("[data-account-back]").forEach(button => button.addEventListener("click", showAccountHome));
-document.getElementById("showPasswordView")?.addEventListener("click", () => showAccountSubview("password"));
-document.getElementById("showDeleteView")?.addEventListener("click", () => { showAccountSubview("delete"); loadDeletionInfo(); });
-document.getElementById("showProfileView")?.addEventListener("click", () => {
-  document.getElementById("profileUsername").value = document.getElementById("accountUsername").textContent;
-  document.getElementById("profileFullName").value = document.getElementById("accountFullName").textContent === "Не указано" ? "" : document.getElementById("accountFullName").textContent;
-  document.getElementById("profileEmail").value = document.getElementById("accountEmail").textContent;
-  showAccountSubview("profile");
-});
-accountBackdrop?.addEventListener("click", event => { if (event.target === accountBackdrop) closeAccountModal(); });
-document.addEventListener("keydown", event => { if (event.key === "Escape" && accountBackdrop?.classList.contains("open")) closeAccountModal(); });
-
-async function loadAccountInfo() {
-  try {
-    const response = await fetch("/users/me");
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Не удалось загрузить аккаунт");
-    document.getElementById("accountUsername").textContent = data.username || "—";
-    document.getElementById("accountFullName").textContent = data.full_name || "Не указано";
-    document.getElementById("accountEmail").textContent = data.email || "—";
-  } catch (error) {
-    document.getElementById("accountUsername").textContent = error.message;
-    document.getElementById("accountFullName").textContent = "—";
-    document.getElementById("accountEmail").textContent = "—";
-  }
-}
-
-async function loadDeletionInfo() {
-  const box = document.getElementById("ownedProjectsBox");
-  box.textContent = "Проверяем ваши проекты...";
-  try {
-    const response = await fetch("/users/account-deletion-info");
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Не удалось проверить проекты");
-    if (!data.owned_projects.length) {
-      box.innerHTML = '<p class="muted">Вы не владеете проектами. Аккаунт можно удалить после подтверждения пароля.</p>';
-      return;
-    }
-    box.innerHTML = '<p><b>Передайте владение проектами принятым участникам:</b></p>' + data.owned_projects.map(project => `
-      <div class="transfer-project">
-        <b>${escapeAccountHtml(project.name)}</b>
-        <label>Новый владелец</label>
-        <select data-transfer-project="${escapeAccountHtml(project._id)}">
-          <option value="">Выберите участника проекта</option>
-          ${(project.available_users || []).map(user => `<option value="${escapeAccountHtml(user._id)}">${escapeAccountHtml(user.username)}</option>`).join("")}
-        </select>
-        ${(project.available_users || []).length ? `<button class="menu-action" type="button" onclick="transferOwnedProject('${escapeAccountHtml(project._id)}')">Передать владение</button>` : '<p class="muted">В проекте пока нет других участников. Пригласите участника и дождитесь принятия приглашения.</p>'}
-      </div>`).join("");
-  } catch (error) {
-    box.textContent = error.message;
-  }
-}
-function escapeAccountHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
-  })[char]);
-}
-async function transferOwnedProject(projectId) {
-  const select = document.querySelector(`[data-transfer-project="${CSS.escape(projectId)}"]`);
-  const newOwnerId = select?.value;
-  if (!newOwnerId) {
-    accountMessage.textContent = "Сначала выберите нового владельца.";
-    accountMessage.className = "account-message error";
-    return;
-  }
-  if (!confirm("Передать владение этим проектом выбранному участнику?")) return;
-  try {
-    const response = await fetch(`/projects/${encodeURIComponent(projectId)}/transfer-owner`, {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({new_owner_id: newOwnerId})
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Не удалось передать владение");
-    accountMessage.textContent = "Владение проектом передано.";
-    accountMessage.className = "account-message";
-    await loadDeletionInfo();
-  } catch (error) {
-    accountMessage.textContent = error.message;
-    accountMessage.className = "account-message error";
-  }
-}
-
-document.getElementById("profileForm")?.addEventListener("submit", async event => {
-  event.preventDefault();
-  const payload = {
-    username: document.getElementById("profileUsername").value,
-    full_name: document.getElementById("profileFullName").value,
-    email: document.getElementById("profileEmail").value,
-    current_password: document.getElementById("profileCurrentPassword").value
-  };
-  try {
-    const response = await fetch("/users/me", {
-      method: "PATCH", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload)
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Не удалось обновить профиль");
-    document.getElementById("accountUsername").textContent = data.username;
-    document.getElementById("accountFullName").textContent = data.full_name || "Не указано";
-    document.getElementById("accountEmail").textContent = data.email;
-    accountToggle.textContent = data.username;
-    accountMessage.textContent = data.message;
-    accountMessage.className = "account-message";
-    document.getElementById("profileCurrentPassword").value = "";
-    showAccountHome();
-    window.location.reload();
-  } catch (error) {
-    accountMessage.textContent = error.message;
-    accountMessage.className = "account-message error";
-  }
-});
-
-document.getElementById("passwordForm")?.addEventListener("submit", async event => {
-  event.preventDefault();
-  accountMessage.className = "account-message";
-  try {
-    const response = await fetch("/users/change-password", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({current_password: document.getElementById("currentPassword").value, new_password: document.getElementById("newPassword").value})
-    });
-    const data = await response.json();
-    accountMessage.textContent = data.message || data.error || "Не удалось изменить пароль";
-    if (!response.ok) accountMessage.classList.add("error"); else event.target.reset();
-  } catch (error) { accountMessage.textContent = "Ошибка соединения с сервером"; accountMessage.classList.add("error"); }
-});
-
-document.getElementById("deleteAccountButton")?.addEventListener("click", async () => {
-  const password = document.getElementById("deletePassword").value;
-  if (!password) { accountMessage.textContent = "Введите пароль для подтверждения."; accountMessage.classList.add("error"); return; }
-  if (!confirm("Вы действительно хотите безвозвратно удалить свой аккаунт? Это действие нельзя отменить.")) return;
-  try {
-    const response = await fetch("/users/delete-account", {
-      method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({password})
-    });
-    const data = await response.json();
-    if (response.ok) { alert(data.message); window.location.href = "/"; return; }
-    accountMessage.textContent = data.error || "Не удалось удалить аккаунт";
-    accountMessage.classList.add("error");
-  } catch (error) { accountMessage.textContent = "Ошибка соединения с сервером"; accountMessage.classList.add("error"); }
-});
-
-const notificationsToggle=document.getElementById("notificationsToggle");
-const notificationsOverlay=document.getElementById("notificationsOverlay");
-const notificationsList=document.getElementById("notificationsList");
-const notificationBadge=document.getElementById("notificationBadge");
-let knownNotificationIds=new Set();
-let notificationsInitialized=false;
-let notificationPollInProgress=false;
-let notificationToastTimer=null;
-
-function notificationEscape(value){
-  return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
-}
-function notificationRelativeText(date){
-  const seconds=Math.max(0,Math.floor((Date.now()-date.getTime())/1000));
-  if(seconds<10)return "только что";
-  if(seconds<60)return `${seconds} сек. назад`;
-  if(seconds<3600)return `${Math.floor(seconds/60)} мин. назад`;
-  if(seconds<86400)return `${Math.floor(seconds/3600)} ч. назад`;
-  return date.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"});
-}
-function notificationTimestamp(value){
-  if(!value)return "";
-  // API returns an ISO timestamp with Z (UTC); display it in the browser's local timezone.
-  const date=new Date(value);
-  if(Number.isNaN(date.getTime()))return "";
-  const exact=date.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
-  return `<time datetime="${date.toISOString()}" title="${exact}">${notificationRelativeText(date)}</time>`;
-}
-function notificationMark(type){
-  if(type==="join_accepted"||type==="invitation_accepted")return "✓";
-  if(type==="join_rejected"||type==="invitation_rejected"||type==="removed_from_project")return "!";
-  if(type==="join_request")return "＋";
-  return "•";
-}
-function notificationId(item){
-  return String(item._id||item.id||`${item.type}:${item.created_at}:${item.title}:${item.message}`);
-}
-function renderNotifications(items){
-  if(!notificationsList)return;
-  notificationsList.innerHTML=items.length?items.map(item=>`
-    <article class="notification-row">
-      <div class="notification-symbol">${notificationMark(item.type)}</div>
-      <div class="notification-body">
-        <strong>${notificationEscape(item.title)}</strong>
-        <p>${notificationEscape(item.message)}</p>
-        <div class="notification-date">${notificationTimestamp(item.created_at)}</div>
-      </div>
-    </article>`).join(""):'<div class="notifications-empty">У вас пока нет уведомлений.</div>';
-}
-function showNotificationToast(item){
-  let toast=document.getElementById("notificationToast");
-  if(!toast){
-    toast=document.createElement("div");
-    toast.id="notificationToast";
-    toast.className="notification-toast";
-    toast.setAttribute("role","status");
-    document.body.appendChild(toast);
-  }
-  toast.innerHTML=`<strong>${notificationEscape(item.title||"Новое уведомление")}</strong><span>${notificationEscape(item.message||"")}</span>`;
-  toast.classList.add("show");
-  if(notificationToastTimer)clearTimeout(notificationToastTimer);
-  notificationToastTimer=setTimeout(()=>toast.classList.remove("show"),5000);
-}
-async function fetchNotifications(){
-  const response=await fetch("/users/notifications",{cache:"no-store"});
-  const data=await response.json();
-  if(!response.ok)throw new Error(data.error||"Ошибка уведомлений");
-  return data;
-}
-function updateNotificationBadge(data){
-  if(!notificationBadge)return;
-  const count=Number(data.unread_count??(data.items||[]).length)||0;
-  notificationBadge.textContent=count>99?"99+":String(count);
-  notificationBadge.hidden=count===0;
-}
-async function refreshNotificationBadge(){
-  if(!notificationBadge)return null;
-  try{
-    const data=await fetchNotifications();
-    updateNotificationBadge(data);
-    return data;
-  }catch(error){return null;}
-}
-async function pollNotifications(){
-  if(!notificationBadge||notificationPollInProgress||document.hidden)return;
-  notificationPollInProgress=true;
-  try{
-    const data=await fetchNotifications();
-    const items=Array.isArray(data.items)?data.items:[];
-    updateNotificationBadge(data);
-    const newItems=items.filter(item=>!knownNotificationIds.has(notificationId(item)));
-    if(notificationsInitialized){
-      newItems.slice().reverse().forEach(showNotificationToast);
-    }
-    items.forEach(item=>knownNotificationIds.add(notificationId(item)));
-    if(notificationsOverlay?.classList.contains("open"))renderNotifications(items);
-  }catch(error){
-    // Временная ошибка сети не должна мешать следующей фоновой проверке.
-  }finally{
-    notificationPollInProgress=false;
-  }
-}
-async function loadNotifications(){
-  if(!notificationsList)return;
-  notificationsList.innerHTML='<div class="notifications-empty">Загрузка уведомлений...</div>';
-  try{
-    const data=await fetchNotifications();
-    const items=Array.isArray(data.items)?data.items:[];
-    updateNotificationBadge(data);
-    items.forEach(item=>knownNotificationIds.add(notificationId(item)));
-    notificationsInitialized=true;
-    renderNotifications(items);
-  }catch(error){
-    notificationsList.innerHTML='<div class="notifications-empty">Не удалось загрузить уведомления.</div>';
-  }
-}
-async function clearNotifications(){
-  if(!notificationsList)return;
-  if(!confirm("Удалить все уведомления? Это действие нельзя отменить."))return;
-  try{
-    const response=await fetch("/users/notifications",{method:"DELETE"});
-    const data=await response.json();
-    if(!response.ok)throw new Error(data.error||"Не удалось очистить уведомления");
-    knownNotificationIds.clear();
-    await loadNotifications();
-  }catch(error){
-    notificationsList.insertAdjacentHTML("afterbegin",`<div class="notifications-empty">${notificationEscape(error.message)}</div>`);
-  }
-}
-function openNotifications(){
-  if(!notificationsOverlay)return;
-  notificationsOverlay.classList.add("open");
-  notificationsOverlay.setAttribute("aria-hidden","false");
-  notificationsToggle.setAttribute("aria-expanded","true");
-  document.body.classList.add("notifications-open");
-  loadNotifications();
-}
-function closeNotifications(){
-  if(!notificationsOverlay)return;
-  notificationsOverlay.classList.remove("open");
-  notificationsOverlay.setAttribute("aria-hidden","true");
-  notificationsToggle.setAttribute("aria-expanded","false");
-  document.body.classList.remove("notifications-open");
-}
-notificationsToggle?.addEventListener("click",openNotifications);
-document.getElementById("closeNotifications")?.addEventListener("click",closeNotifications);
-document.getElementById("clearNotifications")?.addEventListener("click",clearNotifications);
-notificationsOverlay?.addEventListener("click",event=>{if(event.target===notificationsOverlay)closeNotifications();});
-document.addEventListener("keydown",event=>{if(event.key==="Escape")closeNotifications();});
-if(notificationsToggle){
-  // Первичная загрузка запоминает уже существующие уведомления без показа старых всплывающих окон.
-  refreshNotificationBadge().then(data=>{
-    if(data&&Array.isArray(data.items)){
-      data.items.forEach(item=>knownNotificationIds.add(notificationId(item)));
-      notificationsInitialized=true;
-      // Сразу после первичной синхронизации выполняем проверку, не ожидая интервала.
-      pollNotifications();
-    }
-  });
-  // Новые уведомления появляются автоматически, без перезагрузки страницы.
-  setInterval(pollNotifications,3000);
-  // Обновляем относительное время в открытом списке, даже если новых уведомлений нет.
-  setInterval(()=>{
-    if(notificationsOverlay?.classList.contains("open")){
-      const times=notificationsList?.querySelectorAll("time[datetime]")||[];
-      times.forEach(node=>{const date=new Date(node.getAttribute("datetime"));if(!Number.isNaN(date.getTime()))node.textContent=notificationRelativeText(date);});
-    }
-  },15000);
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden)pollNotifications();});
-}
-
-async function logout() {
-  await fetch("/users/logout", {
-    method: "POST"
-  });
-
-  window.location.href = "/";
-}
-</script>
-
+<script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+{% block page_scripts %}{% endblock %}
 </body>
 </html>
