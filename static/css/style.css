@@ -1163,3 +1163,56 @@ html[data-theme="dark"] .account-modal .menu-action.back-action:hover {
     min-height:41px!important;font-size:13px!important;
   }
 }
+
+
+/* PROJECTHUB — balanced mobile dropdown grid */
+@media (max-width:760px) {
+  .nav-links {
+    display:none!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-auto-flow:row!important;
+    align-items:stretch!important;
+    justify-items:stretch!important;
+    gap:9px!important;
+  }
+  .nav-links.is-open { display:grid!important; }
+  .nav-links > a {
+    grid-column:auto!important;
+    width:100%!important;
+    min-height:48px!important;
+    padding:11px 8px!important;
+    border-radius:12px!important;
+    box-sizing:border-box!important;
+  }
+  .nav-links > a:nth-of-type(5) { grid-column:1/-1!important; }
+  .nav-links > .nav-notifications {
+    grid-column:1/-1!important;
+    width:100%!important;
+    min-height:48px!important;
+    justify-content:center!important;
+    margin:0!important;
+    box-sizing:border-box!important;
+  }
+  .nav-links > .user-panel {
+    grid-column:1/-1!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+    width:100%!important;
+    margin:0!important;
+  }
+  .nav-links > .user-panel > button {
+    width:100%!important;
+    min-width:0!important;
+    min-height:48px!important;
+    box-sizing:border-box!important;
+  }
+}
+@media(max-width:420px) {
+  .nav-links { gap:8px!important; }
+  .nav-links > a,.nav-links > .nav-notifications,
+  .nav-links > .user-panel > button {
+    min-height:46px!important;
+    font-size:14px!important;
+  }
+}
