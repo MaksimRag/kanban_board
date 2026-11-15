@@ -360,3 +360,24 @@ main .kanban-panel .board-heading .actions {
   .board-columns { grid-template-columns:repeat(3,minmax(84vw,84vw))!important; }
   .task-card { padding:11px; }
 }
+
+
+/* Touch drag: the dotted handle is the deliberate drag target, leaving the card usable for page scrolling. */
+.drag-hint {
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:34px;padding:5px 9px;border-radius:9px;
+  background:rgba(234,244,252,.96);border:1px solid rgba(112,153,188,.38);
+  color:#315d83;font-size:11px;font-weight:700;cursor:grab;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+}
+.task-card.touch-dragging {
+  opacity:.78;z-index:5;position:relative;
+  transform:translate3d(var(--touch-drag-x,0),var(--touch-drag-y,0),0) scale(1.025);
+  box-shadow:0 12px 28px rgba(24,69,105,.24);
+}
+@media(max-width:760px) {
+  .drag-hint { min-height:40px;min-width:42px;padding:7px 10px;font-size:12px; }
+  .drag-hint:active { background:#d9ebf8; }
+  .kanban-column.drag-over { outline:2px solid rgba(40,117,180,.55);outline-offset:-3px; }
+}
+html[data-theme="dark"] .drag-hint { background:#193b59;color:#dceeff;border-color:#426786; }

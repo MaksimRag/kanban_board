@@ -87,6 +87,10 @@ el('projectForm').addEventListener('submit',async e=>{
  try{await api('/projects/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});el('projectMessage').textContent='Проект создан. Вы назначены его владельцем.';e.target.reset();await loadProjects();}
  catch(err){el('projectMessage').textContent=err.message;}
 });
+// Bind both modal close controls explicitly (close icon and Cancel button).
+document.querySelectorAll('[data-action="closeEditProject"]').forEach(button=>{
+ button.addEventListener('click',closeEditProject);
+});
 el('editProjectModal').addEventListener('click',e=>{if(e.target===el('editProjectModal'))closeEditProject();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeEditProject();});
 el('discoverableSearch')?.addEventListener('input',renderDiscoverableProjects);

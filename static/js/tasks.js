@@ -3,6 +3,77 @@ const statusOrder=['TODO','IN_PROGRESS','DONE'];
 let allTasks=[];
 let draggedTaskId=null;
 
+let touchDragState=null;
+let suppressTaskClickUntil=0;
+
+function clearTouchDrag(){
+  if(!touchDragState)return;
+  touchDragState.card.classList.remove('touch-dragging','dragging');
+  document.querySelectorAll('.kanban-column').forEach(column=>column.classList.remove('drag-over'));
+  touchDragState=null;
+}
+function findDropColumn(x,y){
+  const target=document.elementFromPoint(x,y);
+  return target?.closest('.kanban-column')||null;
+}
+document.getElementById('tasks').addEventListener('pointerdown',event=>{
+  const handle=event.target.closest('.drag-hint');
+  if(!handle||event.pointerType==='mouse')return;
+  const card=handle.closest('.task-card');
+  if(!card||card.getAttribute('draggable')!=='true')return;
+  event.preventDefault();
+  touchDragState={
+    pointerId:event.pointerId,
+    card,
+    taskId:card.dataset.taskId,
+    handle,
+    startX:event.clientX,
+    startY:event.clientY,
+    lastX:event.clientX,
+    lastY:event.clientY
+  };
+  handle.setPointerCapture?.(event.pointerId);
+  card.classList.add('touch-dragging');
+});
+document.addEventListener('pointermove',event=>{
+  if(!touchDragState||event.pointerId!==touchDragState.pointerId)return;
+  event.preventDefault();
+  touchDragState.lastX=event.clientX;
+  touchDragState.lastY=event.clientY;
+  const dx=event.clientX-touchDragState.startX;
+  const dy=event.clientY-touchDragState.startY;
+  touchDragState.card.style.setProperty('--touch-drag-x',`${dx}px`);
+  touchDragState.card.style.setProperty('--touch-drag-y',`${dy}px`);
+  const column=findDropColumn(event.clientX,event.clientY);
+  document.querySelectorAll('.kanban-column').forEach(item=>item.classList.toggle('drag-over',item===column));
+},{passive:false});
+document.addEventListener('pointerup',async event=>{
+  if(!touchDragState||event.pointerId!==touchDragState.pointerId)return;
+  const state=touchDragState;
+  const column=findDropColumn(event.clientX,event.clientY);
+  const task=allTasks.find(item=>item._id===state.taskId);
+  const status=column?.dataset.status;
+  clearTouchDrag();
+  state.card.style.removeProperty('--touch-drag-x');
+  state.card.style.removeProperty('--touch-drag-y');
+  suppressTaskClickUntil=Date.now()+650;
+  if(task&&status&&task.status!==status)await moveTaskToStatus(task,status);
+});
+document.addEventListener('pointercancel',event=>{
+  if(touchDragState&&event.pointerId===touchDragState.pointerId){
+    const card=touchDragState.card;
+    clearTouchDrag();
+    card.style.removeProperty('--touch-drag-x');
+    card.style.removeProperty('--touch-drag-y');
+  }
+});
+document.getElementById('tasks').addEventListener('click',event=>{
+  if(Date.now()<suppressTaskClickUntil){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+},true);
+
 function escapeHtml(value){
   return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 }
@@ -32,7 +103,7 @@ function renderTask(task){
       onclick="openTaskDetails('${escapeHtml(task._id)}')"
       ${task.can_change_status ? 'ondragstart="onCardDragStart(event)" ondragend="onCardDragEnd(event)"' : ''}>
     <div class="task-card-top"><span class="task-status status-${escapeHtml(task.status)}">${escapeHtml(statusNames[task.status]||task.status)}</span>
-      ${task.can_change_status ? '<span class="drag-hint">⠿ Перетащить</span>' : ''}</div>
+      ${task.can_change_status ? '<span class="drag-hint" role="button" tabindex="0" aria-label="Перетащить задачу" title="Зажмите и переместите задачу">⠿ <span>Перетащить</span></span>' : ''}</div>
     <h3>${escapeHtml(task.title)}</h3>
     <div class="task-meta"><span><b>Исполнитель:</b> ${escapeHtml(task.assignee_username||'Не назначен')}</span></div>
     <div class="task-open-hint">Нажмите, чтобы открыть задачу →</div>
