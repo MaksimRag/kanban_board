@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% block title %}Канбан-доска — Kanban Board{% endblock %}
+{% block content %}
+<section class="panel kanban-panel">
+  <div class="board-heading">
+    <div>
+      <h2>Канбан-доска</h2>
+      <p class="muted">Перетаскивайте карточки между колонками, чтобы менять статус задач.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" href="/task-form">＋ Создать задачу</a>
+      <button class="btn btn-secondary" type="button" onclick="loadTasks()">Обновить</button>
+    </div>
+  </div>
+
+  <div class="board-tools">
+    <div class="search-field">
+      <label for="taskSearch">Поиск</label>
+      <input id="taskSearch" type="search" placeholder="Название, описание, проект или участник..." autocomplete="off">
+    </div>
+    <div>
+      <label for="projectFilter">Проект</label>
+      <select id="projectFilter"><option value="">Все проекты</option></select>
+    </div>
+    <div class="board-summary" id="stats">Загрузка задач...</div>
+  </div>
+
+  <div id="message" class="notice" hidden role="status"></div>
+  <div id="viewTaskModal" class="task-modal" hidden>
+    <div class="task-modal-backdrop" onclick="closeTaskDetails()"></div>
+    <section class="task-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="viewTaskHeading">
+      <div class="task-modal-header"><h2 id="viewTaskHeading">Задача</h2><button class="task-modal-close" type="button" onclick="closeTaskDetails()">×</button></div>
+      <div class="task-detail-content">
+        <div class="detail-description-block"><span class="detail-label">Описание</span><p id="detailDescription">—</p></div>
+        <div class="detail-grid">
+          <div><span class="detail-label">Проект</span><strong id="detailProject">—</strong></div>
+          <div><span class="detail-label">Создатель</span><strong id="detailCreator">—</strong></div>
+          <div><span class="detail-label">Исполнитель</span><strong id="detailAssignee">—</strong></div>
+          <div><span class="detail-label">Создана</span><strong id="detailCreated">—</strong></div>
+        </div>
+        <div class="detail-assignee-control" id="detailAssigneeControl" hidden>
+          <label for="detailAssigneeSelect">Назначить исполнителя</label>
+          <select id="detailAssigneeSelect" aria-label="Назначить исполнителя"></select>
+        </div>
+      </div>
+      <div class="task-modal-actions" id="detailActions"></div>
+    </section>
+  </div>
+  <div id="editTaskModal" class="task-modal" hidden>
+    <div class="task-modal-backdrop" onclick="closeEditTaskModal()"></div>
+    <section class="task-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editTaskHeading">
+      <div class="task-modal-header">
+        <h2 id="editTaskHeading">Редактирование задачи</h2>
+        <button class="task-modal-close" type="button" aria-label="Закрыть" onclick="closeEditTaskModal()">×</button>
+      </div>
+      <form id="editTaskForm">
+        <label for="editTaskTitle">Название задачи</label>
+        <input id="editTaskTitle" name="title" type="text" maxlength="200" required>
+        <label for="editTaskDescription">Описание</label>
+        <textarea id="editTaskDescription" name="description" rows="5"></textarea>
+        <div class="task-modal-actions">
+          <button class="btn btn-secondary" type="button" onclick="closeEditTaskModal()">Отмена</button>
+          <button class="btn" id="saveTaskButton" type="submit">Сохранить изменения</button>
+        </div>
+      </form>
+    </section>
+  </div>
+  <div class="board-columns" id="tasks">
+    <div class="empty-state">Загружаем задачи...</div>
+  </div>
+</section>
+
+<style>
+.kanban-panel{padding:24px;max-width:100%;overflow:hidden}
+.board-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:22px}
+.board-heading h2{margin:0 0 6px;font-size:23px}
+.board-heading p{margin:0}
+.board-tools{display:grid;grid-template-columns:minmax(240px,1.5fr) minmax(190px,.8fr);gap:14px;align-items:end;margin-bottom:18px}
+.board-tools label{display:block;font-size:13px;font-weight:700;color:#536176;margin-bottom:6px}
+.board-tools input,.board-tools select{display:block;width:100%;max-width:none;height:42px;margin:0;padding:9px 12px;border:1px solid #ccd5e1;border-radius:8px;background:#fff}
+.board-summary{grid-column:1/-1;font-size:13px;color:#59677b;background:#f2f5f9;border:1px solid #e4eaf1;border-radius:8px;padding:12px 14px;min-height:42px}
+.board-columns{display:grid;grid-template-columns:repeat(3,minmax(260px,1fr));gap:15px;align-items:start;overflow-x:auto;padding:2px 2px 12px}
+.kanban-column{background:#f2f5f9;border:1px solid #e0e6ee;border-radius:11px;min-height:330px;overflow:hidden;transition:border-color .15s,background .15s}
+.kanban-column.drag-over{background:#e8f0fb;border-color:#6d93c2;box-shadow:inset 0 0 0 2px #9bb6d7}
+.column-header{display:flex;align-items:center;justify-content:space-between;padding:14px 15px;border-bottom:1px solid #e0e6ee;background:#edf1f6}
+.column-title{display:flex;align-items:center;gap:9px;font-weight:700;color:#29384d}
+.column-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot-TODO{background:#8292a8}.dot-IN_PROGRESS{background:#e0a43b}.dot-DONE{background:#3a9a68}
+.column-count{font-size:12px;font-weight:700;color:#536176;background:#fff;border:1px solid #dfe5ec;border-radius:20px;padding:3px 9px}
+.column-content{padding:11px;display:flex;flex-direction:column;gap:10px;min-height:270px}
+.task-card{background:#fff;border:1px solid #e0e6ed;border-radius:9px;padding:13px 13px 12px;box-shadow:0 2px 5px #1b2a3a0a;cursor:grab;transition:transform .15s,box-shadow .15s,border-color .15s}
+.task-card:hover{border-color:#c3d1e1;box-shadow:0 4px 12px #1b2a3a12;transform:translateY(-1px)}
+.task-card:active{cursor:grabbing}
+.task-card.dragging{opacity:.45;transform:rotate(1deg)}
+.task-card h3{font-size:14px;line-height:1.4;margin:0 0 7px;color:#243247;overflow-wrap:anywhere}
+.task-description{font-size:12px;line-height:1.5;color:#667387;margin:0 0 11px;white-space:pre-wrap;overflow-wrap:anywhere}
+.task-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+.task-status{font-size:10px;font-weight:700;letter-spacing:.02em;padding:4px 8px;border-radius:20px;background:#edf1f6;color:#596a80}
+.status-IN_PROGRESS{background:#fff3dc;color:#946313}
+.status-DONE{background:#e5f5eb;color:#287348}
+.drag-hint{font-size:10px;color:#a0aaba;white-space:nowrap}
+.task-meta{display:grid;gap:4px;padding-top:9px;border-top:1px solid #edf0f4;font-size:11px;color:#718096}
+.task-meta span{overflow-wrap:anywhere}
+.task-actions{display:flex;align-items:center;gap:7px;margin-top:11px}
+.task-actions select{flex:1;min-width:0;height:31px;padding:4px 7px;margin:0;font-size:11px;border:1px solid #d6dee8;border-radius:6px;background:#fff}
+.task-actions .btn{font-size:11px;padding:7px 9px}
+.btn-secondary{background:#e8edf4;color:#34445b}
+.btn-secondary:hover{background:#dbe4ef}
+.notice{padding:11px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
+.empty-column{border:1px dashed #d4dde7;border-radius:8px;padding:25px 12px;text-align:center;color:#8a96a7;font-size:12px;background:#f8fafc}
+.empty-state{padding:28px 16px;text-align:center;color:#748196;background:#f7f9fb;border:1px dashed #d5dee8;border-radius:10px}
+.task-modal[hidden]{display:none}
+.task-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px}
+.task-modal-backdrop{position:absolute;inset:0;background:rgba(18,29,45,.58)}
+.task-modal-dialog{position:relative;width:min(100%,520px);background:#fff;border-radius:14px;padding:22px;box-shadow:0 18px 55px rgba(12,24,40,.25)}
+.task-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.task-modal-header h2{margin:0;font-size:20px;color:#243247}
+.task-modal-close{width:36px;height:36px;border:0;border-radius:8px;background:#edf1f6;color:#34445b;font-size:24px;cursor:pointer}
+.task-modal-dialog label{display:block;margin:13px 0 6px;font-size:13px;font-weight:700;color:#536176}
+.task-modal-dialog input,.task-modal-dialog textarea{display:block;width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #ccd5e1;border-radius:8px;font:inherit}
+.task-modal-dialog textarea{resize:vertical;min-height:110px}
+.task-modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
+.task-card{cursor:pointer}
+.task-card .task-open-hint{font-size:11px;color:#718096;margin-top:9px}
+.task-detail-content{display:grid;gap:16px}
+.detail-label{display:block;font-size:12px;color:#718096;margin-bottom:5px}
+#detailDescription{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;color:#34445b}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding-top:14px;border-top:1px solid #e8edf3}
+.detail-grid strong{font-size:14px;overflow-wrap:anywhere}
+@media(max-width:520px){.detail-grid{grid-template-columns:1fr}}
+@media(max-width:850px){.board-columns{grid-template-columns:repeat(3,minmax(245px,1fr))}.board-tools{grid-template-columns:1fr 1fr}.board-summary{grid-column:1/-1}}
+@media(max-width:600px){.board-heading{flex-direction:column}.board-tools{grid-template-columns:1fr}.board-summary{grid-column:auto}.kanban-panel{padding:16px}.board-columns{grid-template-columns:repeat(3,minmax(250px,82vw))}}
+
+.task-detail-content{display:grid;gap:14px}
+.detail-description-block{padding-bottom:13px;border-bottom:1px solid #e8edf3}
+.detail-label{display:block;font-size:12px;color:#718096;margin-bottom:5px}
+#detailDescription{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;color:#34445b;line-height:1.5}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.detail-grid strong{font-size:14px;overflow-wrap:anywhere}
+.detail-assignee-control label{display:block;font-size:12px;color:#718096;margin-bottom:5px}
+.detail-assignee-control select{width:100%;max-width:none}
+#detailActions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:20px}
+#detailStatusSelect{min-width:150px;max-width:190px;margin:0}
+@media(max-width:520px){.detail-grid{grid-template-columns:1fr 1fr}#detailActions>*{flex:1 1 100%;max-width:none}}
+</style>
+
+<script>
+const statusNames={TODO:'Новые',IN_PROGRESS:'В работе',DONE:'Готово'};
+const statusOrder=['TODO','IN_PROGRESS','DONE'];
+let allTasks=[];
+let draggedTaskId=null;
+
+function escapeHtml(value){
+  return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+}
+function showMessage(text,error=false){
+  const box=document.getElementById('message');
+  box.hidden=false;box.textContent=text;
+  box.style.background=error?'#fdebed':'#e8f6ed';
+  box.style.color=error?'#982f3b':'#246b46';
+}
+async function responseData(response){
+  let data={};try{data=await response.json();}catch(_){}
+  if(!response.ok)throw new Error(data.error||`Ошибка запроса: ${response.status}`);
+  return data;
+}
+function filteredTasks(){
+  const query=document.getElementById('taskSearch').value.trim().toLocaleLowerCase('ru');
+  const projectId=document.getElementById('projectFilter').value;
+  return allTasks.filter(task=>{
+    if(projectId&&task.project_id!==projectId)return false;
+    const text=[task.title,task.description,task.project_name,task.creator_username,task.assignee_username]
+      .join(' ').toLocaleLowerCase('ru');
+    return !query||text.includes(query);
+  });
+}
+function renderTask(task){
+  return `<article class="task-card" draggable="${task.can_change_status ? 'true' : 'false'}" data-task-id="${escapeHtml(task._id)}"
+      onclick="openTaskDetails('${escapeHtml(task._id)}')"
+      ${task.can_change_status ? 'ondragstart="onCardDragStart(event)" ondragend="onCardDragEnd(event)"' : ''}>
+    <div class="task-card-top"><span class="task-status status-${escapeHtml(task.status)}">${escapeHtml(statusNames[task.status]||task.status)}</span>
+      ${task.can_change_status ? '<span class="drag-hint">⠿ Перетащить</span>' : ''}</div>
+    <h3>${escapeHtml(task.title)}</h3>
+    <div class="task-meta"><span><b>Исполнитель:</b> ${escapeHtml(task.assignee_username||'Не назначен')}</span></div>
+    <div class="task-open-hint">Нажмите, чтобы открыть задачу →</div>
+  </article>`;
+}
+function renderBoard(){
+  const tasks=filteredTasks();
+  const board=document.getElementById('tasks');
+  board.innerHTML=statusOrder.map(status=>{
+    const items=tasks.filter(task=>task.status===status);
+    return `<section class="kanban-column" data-status="${status}" ondragover="onColumnDragOver(event)" ondragleave="onColumnDragLeave(event)" ondrop="onColumnDrop(event)">
+      <header class="column-header">
+        <span class="column-title"><i class="column-dot dot-${status}"></i>${statusNames[status]}</span>
+        <span class="column-count">${items.length}</span>
+      </header>
+      <div class="column-content">${items.length?items.map(renderTask).join(''):'<div class="empty-column">Перетащите задачу сюда</div>'}</div>
+    </section>`;
+  }).join('');
+  document.getElementById('stats').textContent=
+    `Показано ${tasks.length} из ${allTasks.length} задач · Новые: ${tasks.filter(t=>t.status==='TODO').length} · В работе: ${tasks.filter(t=>t.status==='IN_PROGRESS').length} · Готово: ${tasks.filter(t=>t.status==='DONE').length}`;
+}
+function onCardDragStart(event){
+  const card=event.currentTarget;
+  draggedTaskId=card.dataset.taskId;
+  card.classList.add('dragging');
+  event.dataTransfer.effectAllowed='move';
+  event.dataTransfer.setData('text/plain',draggedTaskId);
+}
+function onCardDragEnd(event){
+  event.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.kanban-column').forEach(column=>column.classList.remove('drag-over'));
+  draggedTaskId=null;
+}
+function onColumnDragOver(event){
+  event.preventDefault();
+  event.dataTransfer.dropEffect='move';
+  event.currentTarget.classList.add('drag-over');
+}
+function onColumnDragLeave(event){
+  if(!event.currentTarget.contains(event.relatedTarget))event.currentTarget.classList.remove('drag-over');
+}
+async function onColumnDrop(event){
+  event.preventDefault();
+  const column=event.currentTarget;
+  column.classList.remove('drag-over');
+  const id=event.dataTransfer.getData('text/plain')||draggedTaskId;
+  const status=column.dataset.status;
+  if(!id)return;
+  const task=allTasks.find(item=>item._id===id);
+  if(!task||task.status===status)return;
+  await moveTaskToStatus(task,status);
+}
+async function moveTaskToStatus(task,status){
+  try{
+    const position=allTasks.filter(item=>item.project_id===task.project_id&&item.status===status).length;
+    await responseData(await fetch('/tasks/'+encodeURIComponent(task._id)+'/move',{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({status,position})
+    }));
+    task.status=status;
+    showMessage(`Задача «${task.title}» перемещена в колонку «${statusNames[status]}».`);
+    await loadTasks();
+  }catch(error){showMessage('Не удалось переместить задачу: '+error.message,true);}
+}
+async function changeStatus(id,status){
+  const task=allTasks.find(item=>item._id===id);
+  if(task)await moveTaskToStatus(task,status);
+}
+let viewingTaskId=null;
+async function openTaskDetails(id){
+ const task=allTasks.find(item=>item._id===id);if(!task)return;
+ viewingTaskId=id;
+ document.getElementById('viewTaskHeading').textContent=task.title||'Задача';
+ document.getElementById('detailDescription').textContent=task.description||'Описание не указано.';
+ document.getElementById('detailProject').textContent=task.project_name||'—';
+ document.getElementById('detailCreator').textContent=task.creator_username||'—';
+ document.getElementById('detailAssignee').textContent=task.assignee_username||'Не назначен';
+ const fmt=value=>{
+   if(!value)return 'Не указана';
+   const date=new Date(value);
+   return Number.isNaN(date.getTime())?'Не указана':date.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+ };
+ document.getElementById('detailCreated').textContent=fmt(task.created_at);
+ const actions=[];
+ const assigneeControl=document.getElementById('detailAssigneeControl');
+ const assigneeSelect=document.getElementById('detailAssigneeSelect');
+ assigneeControl.hidden=!task.can_assign;
+ if(task.can_assign){
+   try{
+     const team=await responseData(await fetch(`/projects/${encodeURIComponent(task.project_id)}/members`));
+     assigneeSelect.innerHTML='<option value="">Не назначен</option>'+team.members.map(m=>`<option value="${escapeHtml(m._id)}" ${task.assignee_id===m._id?'selected':''}>${escapeHtml(m.username)}</option>`).join('');
+     assigneeSelect.onchange=async()=>{try{await responseData(await fetch(`/tasks/${encodeURIComponent(id)}/assign`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({assignee_id:assigneeSelect.value||null})}));await loadTasks();openTaskDetails(id);}catch(e){showMessage(e.message,true);}};
+   }catch(e){assigneeControl.hidden=true;}
+ }
+ if(task.can_change_status)actions.push(`<select id="detailStatusSelect" aria-label="Изменить статус">${statusOrder.map(s=>`<option value="${s}" ${task.status===s?'selected':''}>${statusNames[s]}</option>`).join('')}</select>`);
+ if(task.can_edit)actions.push(`<button class="btn" type="button" onclick="editFromDetails('${escapeHtml(id)}')">Редактировать</button>`);
+ if(task.can_delete)actions.push(`<button class="btn danger" type="button" onclick="deleteFromDetails('${escapeHtml(id)}')">Удалить</button>`);
+ document.getElementById('detailActions').innerHTML=actions.join('');
+ const statusSelect=document.getElementById('detailStatusSelect');
+ if(statusSelect)statusSelect.addEventListener('change',async e=>{await changeStatus(id,e.target.value);openTaskDetails(id);});
+ document.getElementById('viewTaskModal').hidden=false;document.body.style.overflow='hidden';
+}
+function closeTaskDetails(){document.getElementById('viewTaskModal').hidden=true;document.body.style.overflow='';viewingTaskId=null;}
+function editFromDetails(id){closeTaskDetails();editTask(id);}
+async function deleteFromDetails(id){closeTaskDetails();await removeTask(id);}
+let editingTaskId=null;
+function editTask(id){
+  const task=allTasks.find(item=>item._id===id);
+  if(!task){showMessage('Не удалось найти задачу для редактирования. Обновите доску.',true);return;}
+  editingTaskId=id;
+  document.getElementById('editTaskTitle').value=task.title||'';
+  document.getElementById('editTaskDescription').value=task.description||'';
+  document.getElementById('editTaskModal').hidden=false;
+  document.body.style.overflow='hidden';
+  document.getElementById('editTaskTitle').focus();
+}
+function closeEditTaskModal(){
+  document.getElementById('editTaskModal').hidden=true;
+  document.body.style.overflow='';
+  editingTaskId=null;
+}
+document.getElementById('editTaskForm').addEventListener('submit',async function(event){
+  event.preventDefault();
+  if(!editingTaskId)return;
+  const title=document.getElementById('editTaskTitle').value.trim();
+  const description=document.getElementById('editTaskDescription').value;
+  if(!title){showMessage('Название задачи не может быть пустым.',true);return;}
+  const button=document.getElementById('saveTaskButton');
+  button.disabled=true;button.textContent='Сохранение...';
+  try{
+    const updatedTask=await responseData(await fetch('/tasks/'+encodeURIComponent(editingTaskId),{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,description})
+    }));
+    const taskIndex=allTasks.findIndex(item=>item._id===editingTaskId);
+    if(taskIndex!==-1)allTasks[taskIndex]=updatedTask;
+    closeEditTaskModal();
+    renderBoard();
+    showMessage('Задача успешно обновлена.');
+  }catch(error){
+    showMessage('Не удалось отредактировать задачу: '+error.message,true);
+  }finally{
+    button.disabled=false;button.textContent='Сохранить изменения';
+  }
+});
+document.addEventListener('keydown',function(event){
+  if(event.key==='Escape'){if(!document.getElementById('editTaskModal').hidden)closeEditTaskModal();if(!document.getElementById('viewTaskModal').hidden)closeTaskDetails();}
+});
+
+async function removeTask(id){
+  if(!confirm('Удалить задачу?'))return;
+  try{
+    const response=await fetch('/tasks/'+encodeURIComponent(id),{method:'DELETE'});
+    if(!response.ok)await responseData(response);
+    showMessage('Задача удалена.');
+    await loadTasks();
+  }catch(error){showMessage('Не удалось удалить задачу: '+error.message,true);}
+}
+async function loadTasks(){
+  const board=document.getElementById('tasks');
+  board.innerHTML='<div class="empty-state">Загружаем задачи...</div>';
+  try{
+    const [projects,tasks]=await Promise.all([
+      responseData(await fetch('/projects/')),
+      responseData(await fetch('/tasks/'))
+    ]);
+    const filter=document.getElementById('projectFilter'),requested=new URLSearchParams(window.location.search).get('project_id'),previous=filter.value||requested||'';
+    filter.innerHTML='<option value="">Все проекты</option>'+projects.map(p=>`<option value="${escapeHtml(p._id)}">${escapeHtml(p.name)}</option>`).join('');
+    filter.value=previous;
+    allTasks=tasks;
+    renderBoard();
+  }catch(error){
+    board.innerHTML=`<div class="empty-state">${escapeHtml('Не удалось загрузить задачи: '+error.message)}</div>`;
+    showMessage(error.message,true);
+  }
+}
+document.getElementById('taskSearch').addEventListener('input',renderBoard);
+document.getElementById('projectFilter').addEventListener('change',renderBoard);
+loadTasks();
+</script>
+{% endblock %}
