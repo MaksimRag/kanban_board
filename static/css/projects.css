@@ -74,3 +74,29 @@ html[data-theme="dark"] .project-owner { border-color:#345c7b; }
  .projects-intro .projects-count { top:auto;bottom:12px;right:50%;transform:translateX(50%); }
  .projects-list-heading { align-items:center!important; }
 }
+
+
+/* Mobile repair: projects and discovery controls must use the full available width. */
+@media(max-width:760px) {
+  .projects-page { width:100%;max-width:100%;min-width:0;padding:4px 0 20px; }
+  .projects-intro.panel { width:100%;min-width:0; }
+  .create-project-panel,.projects-list-section { width:100%;min-width:0;padding:14px!important; }
+  .create-project-form { grid-template-columns:minmax(0,1fr)!important;gap:10px; }
+  .create-project-form > * { width:100%;min-width:0; }
+  .project-grid { grid-template-columns:minmax(0,1fr)!important;width:100%; }
+  .project-card { width:100%;min-width:0;padding:14px; }
+  .project-card-actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .project-card-actions .btn { width:100%;min-width:0;white-space:normal; }
+  .discoverable-toolbar { grid-template-columns:minmax(0,1fr)!important;width:100%; }
+  .discoverable-toolbar > * { min-width:0;width:100%; }
+  .discoverable-result-count { white-space:normal;padding:0; }
+  .projects-list-heading { gap:8px!important; }
+  .projects-list-heading h3 { min-width:0;overflow-wrap:anywhere; }
+  .projects-list-heading button { flex:0 0 auto; }
+  .projects-intro.panel { padding:16px 12px 48px!important; }
+}
+@media(max-width:420px) {
+  .projects-intro h2 { font-size:21px; }
+  .projects-list-heading h3,.create-project-heading h3 { font-size:16px; }
+  .project-card-actions { grid-template-columns:minmax(0,1fr); }
+}

@@ -329,3 +329,34 @@ main .kanban-panel .board-heading .actions {
   main .kanban-panel .board-heading { flex-wrap:wrap!important; }
   main .kanban-panel .board-heading .actions { width:100%!important;justify-content:flex-end!important; }
 }
+
+
+/* Mobile Kanban repair: scroll the lanes inside the board, never the whole page. */
+@media(max-width:760px) {
+  .kanban-panel { width:100%;min-width:0;padding:13px!important;overflow:hidden; }
+  .board-heading { align-items:stretch;gap:12px; }
+  .board-heading-copy { min-width:0; }
+  .board-heading h2 { font-size:21px; }
+  .board-heading .actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+  .board-heading .actions > * { min-width:0;text-align:center;white-space:normal; }
+  .board-tools { grid-template-columns:minmax(0,1fr)!important;width:100%; }
+  .board-tools > * { min-width:0;width:100%; }
+  .board-columns {
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(78vw,78vw))!important;
+    width:100%;max-width:100%;overflow-x:auto!important;
+    overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+    gap:10px;padding:2px 2px 14px;
+  }
+  .kanban-column { min-width:0;width:100%; }
+  .task-modal { padding:10px!important; }
+  .task-modal-dialog { width:100%!important;max-width:100%!important;max-height:calc(100dvh - 20px);overflow-y:auto;padding:16px!important; }
+  .task-modal-actions { flex-wrap:wrap; }
+  .task-modal-actions > * { flex:1 1 100%; }
+}
+@media(max-width:420px) {
+  .board-heading .actions { grid-template-columns:minmax(0,1fr); }
+  .board-heading h2 { font-size:19px; }
+  .board-columns { grid-template-columns:repeat(3,minmax(84vw,84vw))!important; }
+  .task-card { padding:11px; }
+}
