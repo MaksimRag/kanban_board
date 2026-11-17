@@ -288,6 +288,10 @@ async function loadTasks(){
     showMessage(error.message,true);
   }
 }
+// Refresh the Kanban board using the same loader as initial page startup.
+document.querySelectorAll('[data-action="loadTasks"]').forEach(button=>{
+  button.addEventListener('click',()=>loadTasks());
+});
 document.getElementById('taskSearch').addEventListener('input',renderBoard);
 document.getElementById('projectFilter').addEventListener('change',renderBoard);
 loadTasks();

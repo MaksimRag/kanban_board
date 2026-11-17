@@ -32,4 +32,8 @@ async function loadHomeTasks() {
     document.getElementById('stats').textContent='Не удалось загрузить статистику.';
   }
 }
+// The dashboard refresh button reloads both task data and task statistics.
+document.querySelectorAll('[data-action="loadHomeTasks"]').forEach(button=>{
+  button.addEventListener('click',()=>loadHomeTasks());
+});
 loadHomeTasks();

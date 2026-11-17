@@ -82,6 +82,13 @@ async function leaveProject(id){
  try{await api(`/projects/${encodeURIComponent(id)}/leave`,{method:'POST'});await loadProjects();}
  catch(e){el('projectMessage').textContent=e.message;}
 }
+// Refresh controls on the projects page.
+document.querySelectorAll('[data-action="loadProjects"]').forEach(button=>{
+ button.addEventListener('click',()=>loadProjects());
+});
+document.querySelectorAll('[data-action="loadDiscoverableProjects"]').forEach(button=>{
+ button.addEventListener('click',()=>loadDiscoverableProjects());
+});
 el('projectForm').addEventListener('submit',async e=>{
  e.preventDefault();const data=Object.fromEntries(new FormData(e.target));data.name=(data.name||'').trim();
  try{await api('/projects/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});el('projectMessage').textContent='Проект создан. Вы назначены его владельцем.';e.target.reset();await loadProjects();}
