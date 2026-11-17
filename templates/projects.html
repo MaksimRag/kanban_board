@@ -19,14 +19,14 @@
   </section>
 
   <section class="projects-list-section">
-    <div class="projects-list-heading"><h3>Мои проекты</h3><button class="btn btn-secondary" type="button" data-action="loadProjects">Обновить</button></div>
+    <div class="projects-list-heading"><h3>Мои проекты</h3><button class="btn btn-secondary ph-refresh-button" type="button" data-action="loadProjects" >Обновить</button></div>
     <div id="projects" class="project-grid"><div class="projects-loading">Загрузка проектов...</div></div>
   </section>
 
   <section class="projects-list-section">
     <div class="projects-list-heading">
       <div><h3>Найти проект</h3></div>
-      <button class="btn btn-secondary" type="button" data-action="loadDiscoverableProjects">Обновить</button>
+      <button class="btn btn-secondary ph-refresh-button" type="button" data-action="loadDiscoverableProjects" >Обновить</button>
     </div>
     <div class="discoverable-toolbar">
       <div class="discoverable-search-wrap">
@@ -50,6 +50,17 @@
 
 
 </section>
+
+
+<div class="request-confirmation-backdrop" id="requestConfirmationModal" hidden aria-hidden="true">
+  <section class="request-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="requestConfirmationTitle">
+    <button class="request-confirmation-close" type="button" id="closeRequestConfirmation" aria-label="Закрыть">×</button>
+    <div class="request-confirmation-icon" aria-hidden="true">✓</div>
+    <h2 id="requestConfirmationTitle">Заявка отправлена</h2>
+    <p id="requestConfirmationText">Дождитесь, пока владелец проекта рассмотрит вашу заявку. Результат появится в уведомлениях.</p>
+    <button class="btn" type="button" id="confirmRequestDone">Понятно</button>
+  </section>
+</div>
 
 <div class="modal-backdrop" id="editProjectModal" hidden>
  <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editProjectTitle">

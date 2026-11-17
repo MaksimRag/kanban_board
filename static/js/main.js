@@ -238,7 +238,7 @@ function notificationTimestamp(value){
 function notificationMark(type){
   if(type==="join_accepted"||type==="invitation_accepted")return "✓";
   if(type==="join_rejected"||type==="invitation_rejected"||type==="removed_from_project")return "!";
-  if(type==="join_request")return "＋";
+  if(type==="join_request"||type==="join_request_sent")return "＋";
   return "•";
 }
 function notificationId(item){

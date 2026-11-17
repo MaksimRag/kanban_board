@@ -294,6 +294,8 @@ document.querySelectorAll('[data-action="loadTasks"]').forEach(button=>{
 });
 document.getElementById('taskSearch').addEventListener('input',renderBoard);
 document.getElementById('projectFilter').addEventListener('change',renderBoard);
+const tasksRefresh=document.querySelector('[data-action="loadTasks"]');
+tasksRefresh?.addEventListener('click',async()=>{if(tasksRefresh.disabled)return;tasksRefresh.disabled=true;tasksRefresh.classList.add('is-loading');try{await loadTasks();}finally{tasksRefresh.disabled=false;tasksRefresh.classList.remove('is-loading');}});
 loadTasks();
 
 

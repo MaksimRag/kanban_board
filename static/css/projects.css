@@ -100,3 +100,15 @@ html[data-theme="dark"] .project-owner { border-color:#345c7b; }
   .projects-list-heading h3,.create-project-heading h3 { font-size:16px; }
   .project-card-actions { grid-template-columns:minmax(0,1fr); }
 }
+
+/* Confirmation dialog after a join request: centered, accessible and mobile-safe. */
+.request-confirmation-backdrop[hidden]{display:none!important}
+.request-confirmation-backdrop{position:fixed;inset:0;z-index:4100;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(13,24,39,.62);backdrop-filter:blur(4px)}
+.request-confirmation-dialog{position:relative;width:min(440px,100%);max-height:calc(100dvh - 36px);overflow:auto;padding:32px 28px 26px;border:1px solid #e8edf2;border-radius:20px;background:#fff;box-shadow:0 24px 80px #0004;text-align:center;animation:requestDialogIn .22s ease-out}
+.request-confirmation-dialog h2{margin:14px 0 9px;color:#25344a;font-size:23px}
+.request-confirmation-dialog p{margin:0 auto 22px;max-width:340px;color:#65748a;font-size:14px;line-height:1.65;overflow-wrap:anywhere}
+.request-confirmation-dialog>.btn{min-width:140px}
+.request-confirmation-icon{display:grid;place-items:center;width:58px;height:58px;margin:0 auto;border-radius:50%;background:#fff2e7;color:#d96b20;font-size:30px;font-weight:700}
+.request-confirmation-close{position:absolute;right:12px;top:12px;width:36px;height:36px;border:0;border-radius:10px;background:#f1f3f6;color:#455266;font-size:24px;cursor:pointer}
+@keyframes requestDialogIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:480px){.request-confirmation-backdrop{padding:14px;align-items:center}.request-confirmation-dialog{padding:28px 20px 22px;border-radius:17px}.request-confirmation-dialog h2{font-size:21px}.request-confirmation-dialog p{font-size:14px}}

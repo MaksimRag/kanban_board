@@ -32,8 +32,20 @@ async function loadHomeTasks() {
     document.getElementById('stats').textContent='Не удалось загрузить статистику.';
   }
 }
-// The dashboard refresh button reloads both task data and task statistics.
-document.querySelectorAll('[data-action="loadHomeTasks"]').forEach(button=>{
-  button.addEventListener('click',()=>loadHomeTasks());
+// The dashboard refresh button reloads task data and statistics.
+document.querySelectorAll('[data-action="loadHomeTasks"]').forEach(homeRefresh => {
+  homeRefresh.addEventListener('click', async () => {
+    if (homeRefresh.disabled) return;
+
+    homeRefresh.disabled = true;
+    homeRefresh.classList.add('is-loading');
+
+    try {
+      await loadHomeTasks();
+    } finally {
+      homeRefresh.disabled = false;
+      homeRefresh.classList.remove('is-loading');
+    }
+  });
 });
 loadHomeTasks();

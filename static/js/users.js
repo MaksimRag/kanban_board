@@ -84,8 +84,9 @@ async function sendInvitation(){
  catch(e){$('memberMessage').textContent=e.message;}
 }
 $('memberProjectSelect').addEventListener('change',loadMembers);
-$('refreshMembers').addEventListener('click',loadMembers);$('refreshJoinRequests').addEventListener('click',loadJoinRequests);
-$('refreshInvitations').addEventListener('click',loadInvitations);$('refreshOutgoing').addEventListener('click',loadOutgoingInvitations);
+function bindRefreshButton(id,action){const button=$(id);button?.addEventListener('click',async()=>{if(button.disabled)return;button.disabled=true;button.classList.add('is-loading');try{await action();}finally{button.disabled=false;button.classList.remove('is-loading');}});}
+bindRefreshButton('refreshMembers',loadMembers);bindRefreshButton('refreshJoinRequests',loadJoinRequests);
+bindRefreshButton('refreshInvitations',loadInvitations);bindRefreshButton('refreshOutgoing',loadOutgoingInvitations);
 $('openInviteModal').addEventListener('click',openInvite);
 $('sendInvite').addEventListener('click',sendInvitation);
 $('closeInviteModal').addEventListener('click',()=>$('inviteModal').hidden=true);

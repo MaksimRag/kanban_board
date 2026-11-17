@@ -1250,3 +1250,11 @@ html[data-theme="dark"] .account-modal .menu-action.back-action:hover {
 @media(max-width:380px) {
   #clearNotifications { font-size:13px!important;padding:7px 10px!important; }
 }
+
+/* Shared refresh-button interaction used consistently on every page. */
+.ph-refresh-button{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:38px;transition:background .18s ease,transform .18s ease,opacity .18s ease}
+.ph-refresh-button:hover:not(:disabled){transform:translateY(-1px)}
+.ph-refresh-button:disabled{cursor:wait;opacity:.78}
+.ph-refresh-button.is-loading::before{content:"";width:14px;height:14px;flex:0 0 14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:phRefreshSpin .7s linear infinite}
+@keyframes phRefreshSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.ph-refresh-button,.request-confirmation-dialog{animation:none!important;transition:none!important}.ph-refresh-button.is-loading::before{animation-duration:1.8s}}

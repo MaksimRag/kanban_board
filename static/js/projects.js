@@ -43,7 +43,7 @@ function renderDiscoverableProjects(){
    <div class="project-card-top"><h4>${esc(p.name)}</h4><span class="project-role">Открыт для заявок</span></div>
    <p class="project-description">${esc(p.description||'Описание не добавлено.')}</p>
    <div class="project-owner">Владелец · <b>${esc(p.owner_username||'—')}</b> &nbsp;·&nbsp; Участников · <b>${Number(p.member_count)||0}</b></div>
-   <div class="project-card-actions"><button class="btn" type="button" onclick="requestToJoin('${esc(p._id)}')">Подать заявку</button></div>
+   <div class="project-card-actions"><button class="btn" type="button" data-request-project="${esc(p._id)}" onclick="requestToJoin('${esc(p._id)}')">Подать заявку</button></div>
   </article>`).join(''):'<div class="project-empty">'+(query?'По вашему запросу ничего не найдено. Попробуйте изменить поисковую фразу или сортировку.':'Сейчас нет проектов, открытых для вступления.')+'</div>';
 }
 async function loadDiscoverableProjects(){
@@ -53,12 +53,29 @@ async function loadDiscoverableProjects(){
   renderDiscoverableProjects();
  }catch(e){box.innerHTML=`<div class="project-empty">${esc(e.message)}</div>`;el('discoverableResultCount').textContent='Не удалось загрузить';}
 }
+function openRequestConfirmation(projectName){
+ const modal=el('requestConfirmationModal');
+ el('requestConfirmationText').textContent=`Заявка на вступление в проект «${projectName}» отправлена. Дождитесь, пока владелец проекта рассмотрит её. Результат также появится в уведомлениях.`;
+ modal.hidden=false;modal.setAttribute('aria-hidden','false');document.body.classList.add('modal-open');
+ el('confirmRequestDone').focus();
+}
+function closeRequestConfirmation(){
+ const modal=el('requestConfirmationModal');if(!modal)return;
+ modal.hidden=true;modal.setAttribute('aria-hidden','true');document.body.classList.remove('modal-open');
+}
 async function requestToJoin(id){
+ const project=discoverableCache.find(item=>item._id===id);
+ const button=document.querySelector(`[data-request-project="${CSS.escape(id)}"]`);
+ if(button){button.disabled=true;button.classList.add('is-loading');}
  try{
   await api(`/projects/${encodeURIComponent(id)}/join-requests`,{method:'POST'});
   await loadDiscoverableProjects();
-  el('projectMessage').textContent='Заявка отправлена. Дождитесь решения владельца проекта.';
- }catch(e){el('projectMessage').textContent=e.message;}
+  openRequestConfirmation(project?.name||'проект');
+  if(window.refreshNotificationBadge)window.refreshNotificationBadge();
+ }catch(e){
+  if(button){button.disabled=false;button.classList.remove('is-loading');}
+  el('projectMessage').textContent=e.message;
+ }
 }
 function editProject(id){
  editingProject=projectsCache.find(p=>p._id===id);if(!editingProject)return;
@@ -102,4 +119,11 @@ el('editProjectModal').addEventListener('click',e=>{if(e.target===el('editProjec
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeEditProject();});
 el('discoverableSearch')?.addEventListener('input',renderDiscoverableProjects);
 el('discoverableSort')?.addEventListener('change',renderDiscoverableProjects);
+el('closeRequestConfirmation')?.addEventListener('click',closeRequestConfirmation);
+el('confirmRequestDone')?.addEventListener('click',closeRequestConfirmation);
+el('requestConfirmationModal')?.addEventListener('click',event=>{if(event.target===el('requestConfirmationModal'))closeRequestConfirmation();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeRequestConfirmation();});
+function bindRefresh(button,action){if(!button)return;button.addEventListener('click',async()=>{if(button.disabled)return;button.disabled=true;button.classList.add('is-loading');try{await action();}finally{button.disabled=false;button.classList.remove('is-loading');}});}
+bindRefresh(document.querySelector('[data-action="loadProjects"]'),loadProjects);
+bindRefresh(document.querySelector('[data-action="loadDiscoverableProjects"]'),loadDiscoverableProjects);
 loadProjects();

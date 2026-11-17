@@ -424,9 +424,16 @@ def create_project_join_request(project_id, user_id):
     result = database.project_join_requests.insert_one(doc)
     doc["_id"] = result.inserted_id
     applicant = get_user_by_id(user_id)
+    applicant_name = (applicant or {}).get("username", "участник")
+    project_name = project.get("name", "")
     create_notification(
         project.get("owner_id"), "join_request", "Новая заявка на вступление",
-        f"Пользователь @{(applicant or {}).get('username', 'участник')} хочет вступить в проект «{project.get('name', '')}».",
+        f"Пользователь @{applicant_name} хочет вступить в проект «{project_name}».",
+        project_id
+    )
+    create_notification(
+        user_oid, "join_request_sent", "Заявка отправлена",
+        f"Ваша заявка на вступление в проект «{project_name}» отправлена. Дождитесь, пока владелец проекта рассмотрит её.",
         project_id
     )
     return _to_str(doc), None
