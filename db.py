@@ -609,13 +609,13 @@ def respond_project_invitation(invitation_id, user_id, accept):
     return _invitation_to_dict(database.project_invitations.find_one({"_id": inv_oid})), None
 
 
-def remove_project_member(project_id, user_id):
+def remove_project_member(project_id, user_id, notify_removed=True):
     p_oid, u_oid = _parse_id(project_id), _parse_id(user_id)
     if p_oid is None or u_oid is None:
         return False
     project = get_db().projects.find_one({"_id": p_oid})
     result = get_db().project_memberships.delete_one({"project_id": p_oid, "user_id": u_oid})
-    if result.deleted_count and project:
+    if result.deleted_count and project and notify_removed:
         create_notification(
             u_oid, "removed_from_project", "Доступ к проекту закрыт",
             f"Вас исключили из проекта «{project.get('name', '')}».",

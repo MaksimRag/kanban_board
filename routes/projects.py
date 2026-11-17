@@ -246,7 +246,7 @@ def leave_project(project_id):
         return jsonify({"error": "Проект не найден"}), 404
     if _is_owner(project):
         return jsonify({"error": "Владелец не может покинуть проект. Сначала передайте владение."}), 409
-    if not db.remove_project_member(project_id, session.get("user_id")):
+    if not db.remove_project_member(project_id, session.get("user_id"), notify_removed=False):
         return jsonify({"error": "Вы не состоите в этом проекте"}), 404
     member = db.get_user_by_id(session.get("user_id"))
     db.create_notification(
